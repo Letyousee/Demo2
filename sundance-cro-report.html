@@ -5,1211 +5,1090 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FastTrack CRO Analysis — Sundance Leather</title>
 <style>
+/* ── Tokens ── */
 :root {
-  --bg:#FAF4EC;
-  --surface:#F2E9DC;
-  --card:#E8DDD0;
-  --card2:#DDD1C2;
-  --border:#C4AE90;
-  --accent:#9B5C1A;
-  --accent-light:#C4762A;
-  --text:#160C02;
-  --text-2:#5A4228;
-  --critical:#B83030;
-  --success:#3A7A52;
-  --warn:#8A6A10;
-  --dot-inactive:#C4AE90;
-  --slide-num:#9B8265;
+  --bg:#FAF4EC; --surface:#F2E9DC; --card:#E8DDD0; --card2:#DDD1C2;
+  --border:#C4AE90; --accent:#9B5C1A; --accent2:#C4762A;
+  --text:#160C02; --text2:#5A4228; --text3:#8A7055;
+  --crit:#B83030; --ok:#3A7A52; --warn:#8A6A10;
+  --dot-off:#C4AE90;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#150F08; --surface:#1E1610; --card:#271D10; --card2:#301F0C;
+  --border:#3C2D1A; --accent:#C4762A; --accent2:#D4924A;
+  --text:#F0E8DA; --text2:#9B8265; --text3:#6B5535;
+  --crit:#D95050; --ok:#5C9E74; --warn:#C4A030; --dot-off:#3C2D1A;
+}}
+:root[data-theme=dark]{
+  --bg:#150F08; --surface:#1E1610; --card:#271D10; --card2:#301F0C;
+  --border:#3C2D1A; --accent:#C4762A; --accent2:#D4924A;
+  --text:#F0E8DA; --text2:#9B8265; --text3:#6B5535;
+  --crit:#D95050; --ok:#5C9E74; --warn:#C4A030; --dot-off:#3C2D1A;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg:#150F08;
-    --surface:#1E1610;
-    --card:#271D10;
-    --card2:#301F0C;
-    --border:#3C2D1A;
-    --accent:#C4762A;
-    --accent-light:#D4924A;
-    --text:#F0E8DA;
-    --text-2:#9B8265;
-    --critical:#D95050;
-    --success:#5C9E74;
-    --warn:#C4A030;
-    --dot-inactive:#3C2D1A;
-    --slide-num:#6B5535;
-  }
-}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;height:100vh;overflow:hidden;user-select:none}
 
-:root[data-theme="dark"] {
-  --bg:#150F08;
-  --surface:#1E1610;
-  --card:#271D10;
-  --card2:#301F0C;
-  --border:#3C2D1A;
-  --accent:#C4762A;
-  --accent-light:#D4924A;
-  --text:#F0E8DA;
-  --text-2:#9B8265;
-  --critical:#D95050;
-  --success:#5C9E74;
-  --warn:#C4A030;
-  --dot-inactive:#3C2D1A;
-  --slide-num:#6B5535;
-}
+/* ── Progress ── */
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--accent);transition:width .4s;z-index:200}
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── Dots ── */
+#dots{position:fixed;right:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px;z-index:200}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--dot-off);cursor:pointer;border:none;transition:background .2s,transform .2s}
+.dot.active{background:var(--accent);transform:scale(1.45)}
 
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: system-ui, -apple-system, sans-serif;
-  height: 100vh;
-  overflow: hidden;
-  user-select: none;
-}
+/* ── Arrows ── */
+.arrow{position:fixed;top:50%;transform:translateY(-50%);width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--border);border-radius:50%;cursor:pointer;z-index:200;color:var(--text2);font-size:18px;opacity:.7;transition:opacity .2s,background .2s}
+.arrow:hover{opacity:1;background:var(--accent);color:var(--bg)}
+#prev{left:12px}#next{right:32px}
 
-/* ── Progress bar ── */
-#progress {
-  position: fixed;
-  top: 0; left: 0;
-  height: 3px;
-  background: var(--accent);
-  transition: width 0.4s ease;
-  z-index: 100;
-}
+/* ── Counter ── */
+#counter{position:fixed;bottom:12px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--text3);letter-spacing:.08em;z-index:200;font-variant-numeric:tabular-nums}
 
-/* ── Dot nav ── */
-#dots {
-  position: fixed;
-  right: 18px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 100;
-}
-.dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--dot-inactive);
-  cursor: pointer;
-  transition: background 0.25s, transform 0.25s;
-}
-.dot.active { background: var(--accent); transform: scale(1.4); }
+/* ── Slides ── */
+#deck{width:100%;height:100vh;position:relative}
+.slide{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .4s;overflow-y:auto;padding:40px 56px 52px}
+.slide.active{opacity:1;pointer-events:all}
 
-/* ── Arrow nav ── */
-.arrow {
-  position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 44px; height: 44px;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  cursor: pointer;
-  z-index: 100;
-  color: var(--text-2);
-  font-size: 20px;
-  transition: background 0.2s, color 0.2s;
-  opacity: 0.75;
-}
-.arrow:hover { background: var(--accent); color: var(--text); opacity: 1; }
-#prev { left: 14px; }
-#next { right: 36px; }
+/* ── Type ── */
+.eyebrow{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;font-weight:700}
+h1{font-family:Georgia,'Palatino Linotype',serif;font-size:clamp(26px,3.8vw,50px);font-weight:normal;line-height:1.15;text-wrap:balance}
+h2{font-family:Georgia,'Palatino Linotype',serif;font-size:clamp(18px,2.4vw,30px);font-weight:normal;line-height:1.2;text-wrap:balance}
+.rule{width:40px;height:2px;background:var(--accent);margin:14px 0}
+p,li{font-size:13px;line-height:1.65;color:var(--text2)}
+strong{color:var(--text);font-weight:600}
+ul{padding-left:16px;display:flex;flex-direction:column;gap:4px}
 
-/* ── Slide counter ── */
-#counter {
-  position: fixed;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 11px;
-  color: var(--slide-num);
-  letter-spacing: .08em;
-  z-index: 100;
-  font-variant-numeric: tabular-nums;
-}
+/* ── Tags ── */
+.tag{display:inline-block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px;font-weight:700}
+.tag-crit{background:color-mix(in srgb,var(--crit) 15%,transparent);color:var(--crit);border:1px solid color-mix(in srgb,var(--crit) 30%,transparent)}
+.tag-quick{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 30%,transparent)}
+.tag-high{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent)}
 
-/* ── Deck ── */
-#deck {
-  width: 100%;
-  height: 100vh;
-  position: relative;
-}
+/* ══════════════════════════════════
+   BROWSER MOCKUP SYSTEM
+   ══════════════════════════════════ */
+.mockup-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;margin-top:14px;min-height:0}
+.mockup-col{display:flex;flex-direction:column;gap:6px}
+.mockup-label{font-size:10px;text-transform:uppercase;letter-spacing:.14em;font-weight:700;display:flex;align-items:center;gap:6px}
+.mockup-label.before{color:var(--crit)}
+.mockup-label.after{color:var(--ok)}
+.mockup-label svg{width:12px;height:12px;flex-shrink:0}
 
-.slide {
-  position: absolute;
-  inset: 0;
-  background: var(--bg);
-  display: flex;
-  flex-direction: column;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.45s ease;
-  overflow-y: auto;
-  padding: 48px 60px 56px;
-}
-.slide.active {
-  opacity: 1;
-  pointer-events: all;
-}
+.browser{background:#e8e8e8;border-radius:8px 8px 6px 6px;overflow:hidden;border:1px solid #ccc;font-size:0;flex:1;display:flex;flex-direction:column}
+@media (prefers-color-scheme:dark){.browser{background:#2a2a2a;border-color:#444}}
 
-/* ── Typography ── */
-.slide-label {
-  font-size: 10px;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--accent);
-  margin-bottom: 10px;
-  font-weight: 600;
-}
-h1.deck-title {
-  font-family: Georgia, 'Palatino Linotype', serif;
-  font-size: clamp(28px, 4vw, 52px);
-  font-weight: normal;
-  line-height: 1.15;
-  text-wrap: balance;
-  color: var(--text);
-}
-h2.slide-title {
-  font-family: Georgia, 'Palatino Linotype', serif;
-  font-size: clamp(20px, 2.6vw, 34px);
-  font-weight: normal;
-  line-height: 1.2;
-  text-wrap: balance;
-  color: var(--text);
-}
-h3.quad-head {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: .14em;
-  color: var(--accent);
-  margin-bottom: 8px;
-  font-weight: 700;
-}
-p, li { font-size: 14px; line-height: 1.65; color: var(--text-2); }
-strong { color: var(--text); font-weight: 600; }
+.browser-bar{background:#d4d4d4;padding:6px 10px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+@media (prefers-color-scheme:dark){.browser-bar{background:#383838}}
+.b-dots{display:flex;gap:4px}
+.b-dot{width:9px;height:9px;border-radius:50%}
+.b-dot.r{background:#FF5F57}.b-dot.y{background:#FEBC2E}.b-dot.g{background:#28C840}
+.b-url{flex:1;background:#fff;border-radius:10px;padding:3px 10px;font-size:11px;color:#555;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px}
+@media (prefers-color-scheme:dark){.b-url{background:#1a1a1a;color:#aaa}}
 
-/* ── Divider ── */
-.rule {
-  width: 48px; height: 2px;
-  background: var(--accent);
-  margin: 16px 0;
-}
+.browser-body{background:#fff;flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
+@media (prefers-color-scheme:dark){.browser-body{background:#f5f0e8}}
 
-/* ── Tag / badge ── */
-.tag {
-  display: inline-block;
-  font-size: 10px;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-weight: 700;
-}
-.tag-critical { background: color-mix(in srgb, var(--critical) 18%, transparent); color: var(--critical); border: 1px solid color-mix(in srgb, var(--critical) 35%, transparent); }
-.tag-quick { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); border: 1px solid color-mix(in srgb, var(--success) 35%, transparent); }
-.tag-high { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); }
+/* Page elements inside browser */
+.pg-header{background:#3d2a14;padding:6px 10px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.pg-logo{color:#d4a86a;font-size:10px;font-family:Georgia,serif;font-weight:bold}
+.pg-nav{display:flex;gap:6px;flex:1}
+.pg-nav span{color:#c8a87a;font-size:8px;cursor:default}
+.pg-search-icon{width:18px;height:18px;background:#5a3e20;border-radius:3px;display:flex;align-items:center;justify-content:center;color:#c8a87a;font-size:10px;flex-shrink:0}
+.pg-search-bar{background:#fff;border-radius:10px;padding:2px 8px;font-size:8px;color:#888;flex:1;max-width:160px;border:1px solid #ddd}
 
-/* ── SLIDE 1: TITLE ── */
-#s1 {
-  justify-content: center;
-  align-items: flex-start;
-  background: var(--bg);
-}
-.title-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-  border-radius: 4px;
-  padding: 6px 14px;
-  margin-bottom: 28px;
-}
-.title-badge span { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
-.subtitle { font-size: 16px; color: var(--text-2); margin-top: 20px; max-width: 480px; line-height: 1.6; }
-.meta-row {
-  display: flex;
-  gap: 36px;
-  margin-top: 48px;
-  flex-wrap: wrap;
-}
-.meta-item { display: flex; flex-direction: column; gap: 4px; }
-.meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: var(--accent); font-weight: 700; }
-.meta-value { font-size: 14px; color: var(--text); font-weight: 600; }
-.leather-accent {
-  position: absolute;
-  right: 0; top: 0; bottom: 0;
-  width: 38%;
-  background: linear-gradient(135deg, var(--surface) 0%, var(--card) 100%);
-  border-left: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  padding: 40px;
-}
-.stat-big {
-  text-align: center;
-}
-.stat-big .num {
-  font-family: Georgia, serif;
-  font-size: 52px;
-  color: var(--accent);
-  line-height: 1;
-  font-weight: normal;
-}
-.stat-big .unit { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--text-2); margin-top: 6px; }
-.stat-divider { width: 1px; height: 32px; background: var(--border); }
+.pg-hero{background:linear-gradient(135deg,#5a3e20 0%,#3d2a14 100%);flex:1;position:relative;display:flex;align-items:flex-end;justify-content:center;padding:8px;min-height:60px}
+.pg-hero-text{color:#d4a86a;font-family:Georgia,serif;font-size:9px;text-align:center;line-height:1.3;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.pg-hero-btn{background:#c4762a;color:#fff;font-size:8px;padding:4px 10px;border-radius:3px;white-space:nowrap}
+
+.pg-products{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:6px;flex-shrink:0}
+.pg-product{background:#f8f3ed;border:1px solid #e8ddd0;border-radius:3px;padding:5px}
+.pg-prod-img{background:#e8d4b8;height:30px;border-radius:2px;margin-bottom:4px}
+.pg-prod-name{font-size:7px;color:#3d2a14;font-weight:600;margin-bottom:3px}
+.pg-prod-price{font-size:7px;color:#9B5C1A;margin-bottom:4px}
+.pg-prod-btn{background:#9B5C1A;color:#fff;font-size:7px;padding:2px 6px;border-radius:2px;width:100%;text-align:center}
+.pg-prod-btn.bad{background:#aaa;color:#fff}
+.pg-prod-btn.good{background:#3A7A52;color:#fff}
+.pg-prod-badge{background:#c4762a;color:#fff;font-size:6px;padding:1px 4px;border-radius:2px;margin-bottom:2px;display:inline-block}
+
+.pg-footer{background:#2a1d0e;padding:5px 10px;flex-shrink:0}
+.pg-footer-text{color:#8a6a3a;font-size:7px}
+.pg-payment-row{display:flex;gap:4px;margin-top:3px}
+.pg-pay{background:#1a3a6a;color:#fff;font-size:6px;padding:1px 4px;border-radius:2px}
+.pg-pay.visa{background:#1a1f71}.pg-pay.mc{background:#eb001b}.pg-pay.amex{background:#007bc1}.pg-pay.pp{background:#003087}
+
+/* ATC section */
+.pg-atc-section{padding:8px 10px;background:#f8f3ed;flex-shrink:0}
+.pg-atc-price{font-size:11px;color:#3d2a14;font-weight:700;margin-bottom:4px}
+.pg-atc-btn{background:#9B5C1A;color:#fff;font-size:9px;padding:5px 12px;border-radius:3px;width:100%;text-align:center;margin-bottom:4px}
+.pg-trust-row{display:flex;gap:6px;margin-top:4px}
+.pg-trust-pill{background:#e8f4ed;border:1px solid #5C9E74;border-radius:3px;padding:2px 5px;font-size:6px;color:#3A7A52;white-space:nowrap}
+.pg-ship-line{font-size:7px;color:#3A7A52;margin-top:3px}
+
+/* Reviews section */
+.pg-reviews{background:#f8f3ed;padding:6px 10px;flex-shrink:0}
+.pg-reviews-head{font-size:8px;color:#3d2a14;font-weight:700;margin-bottom:4px}
+.pg-review-card{background:#fff;border:1px solid #e8ddd0;border-radius:3px;padding:4px 6px;margin-bottom:3px}
+.pg-stars{color:#f0a500;font-size:8px}
+.pg-review-text{font-size:7px;color:#5a4228;margin-top:1px}
+.pg-review-name{font-size:6px;color:#9b8265;margin-top:1px}
+.pg-rating-badge{display:flex;align-items:center;gap:4px;margin-bottom:5px}
+.pg-rating-num{font-size:12px;color:#c4762a;font-weight:700;font-family:Georgia,serif}
+.pg-rating-sub{font-size:7px;color:#5a4228}
+
+/* Popup */
+.pg-popup-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center}
+.pg-popup{background:#fff;border-radius:6px;padding:12px;width:130px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.pg-popup-head{font-size:9px;color:#3d2a14;font-weight:700;margin-bottom:3px}
+.pg-popup-sub{font-size:7px;color:#5a4228;margin-bottom:6px}
+.pg-popup-input{width:100%;border:1px solid #ddd;border-radius:3px;padding:3px 6px;font-size:7px;margin-bottom:4px;color:#333}
+.pg-popup-btn{background:#9B5C1A;color:#fff;font-size:7px;padding:3px 10px;border-radius:3px;width:100%}
+
+/* Sidebar */
+.pg-sidebar-link{font-size:7px;padding:3px 6px;margin-top:2px;border-radius:2px;display:block}
+.pg-sidebar-link.bad{background:color-mix(in srgb,#B83030 12%,transparent);color:#B83030;border:1px solid color-mix(in srgb,#B83030 30%,transparent)}
+.pg-sidebar-link.good{background:color-mix(in srgb,#3A7A52 12%,transparent);color:#3A7A52;border:1px solid color-mix(in srgb,#3A7A52 30%,transparent)}
+
+/* Mobile mockup */
+.mobile-browser{background:#e8e8e8;border-radius:14px;overflow:hidden;border:2px solid #999;display:flex;flex-direction:column;width:120px;margin:0 auto;flex:1}
+.mobile-bar{background:#d4d4d4;padding:4px 8px;font-size:7px;color:#555;text-align:center;flex-shrink:0;font-family:monospace}
+.mobile-body{background:#fff;flex:1;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.mobile-sticky{position:absolute;bottom:0;left:0;right:0;background:#9B5C1A;padding:5px 8px;display:flex;align-items:center;justify-content:space-between;z-index:10}
+.mobile-sticky-name{font-size:7px;color:#fff;opacity:.85}
+.mobile-sticky-btn{background:#fff;color:#9B5C1A;font-size:7px;padding:2px 6px;border-radius:2px;font-weight:700;white-space:nowrap}
+
+/* Annotation */
+.annotation{position:absolute;border:2px dashed;border-radius:4px;pointer-events:none}
+.annotation.bad{border-color:var(--crit);background:color-mix(in srgb,var(--crit) 8%,transparent)}
+.annotation.good{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 8%,transparent)}
+.annotation-label{position:absolute;font-size:7px;font-weight:700;white-space:nowrap;padding:1px 5px;border-radius:3px;line-height:1.4}
+.annotation-label.bad{background:var(--crit);color:#fff;top:-14px;left:0}
+.annotation-label.good{background:var(--ok);color:#fff;top:-14px;left:0}
+
+/* Bottom bar */
+.bottom-bar{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;flex-shrink:0}
+.stat-chip{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 14px;display:flex;align-items:center;gap:12px}
+.stat-num{font-family:Georgia,serif;font-size:28px;color:var(--accent);line-height:1;flex-shrink:0}
+.stat-body{}
+.stat-title{font-size:11px;font-weight:700;color:var(--text);margin-bottom:2px}
+.stat-sub{font-size:11px;color:var(--text2)}
+.comp-chip{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px 14px}
+.comp-label{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-weight:700;margin-bottom:4px}
+.comp-text{font-size:11px;color:var(--text2);line-height:1.5}
+
+/* ── Slide 1 ── */
+#s1{justify-content:center;position:relative;overflow:hidden}
+.s1-right{position:absolute;right:0;top:0;bottom:0;width:36%;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px}
+.hero-stat{text-align:center}
+.hero-stat .n{font-family:Georgia,serif;font-size:48px;color:var(--accent);line-height:1}
+.hero-stat .u{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--text2);margin-top:5px}
+.hero-divider{width:1px;height:28px;background:var(--border)}
+.meta-row{display:flex;gap:32px;margin-top:40px;flex-wrap:wrap}
+.meta-item{display:flex;flex-direction:column;gap:3px}
+.meta-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);font-weight:700}
+.meta-val{font-size:13px;color:var(--text);font-weight:600}
 
 /* ── Overview grid ── */
-.overview-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px;
-  margin-top: 24px;
-}
-.overview-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 20px;
-}
-.overview-card .oc-label { font-size: 10px; text-transform: uppercase; letter-spacing: .13em; color: var(--accent); font-weight: 700; margin-bottom: 8px; }
-.overview-card .oc-value { font-size: 15px; color: var(--text); font-weight: 600; margin-bottom: 4px; }
-.overview-card .oc-sub { font-size: 12px; color: var(--text-2); }
+.ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.ov-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:16px}
+.ov-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-weight:700;margin-bottom:6px}
+.ov-val{font-size:14px;color:var(--text);font-weight:600;margin-bottom:2px}
+.ov-sub{font-size:11px;color:var(--text2)}
 
 /* ── Methodology ── */
-.method-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px;
-  margin-top: 24px;
-}
-.method-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 22px;
-}
-.method-num { font-family: Georgia, serif; font-size: 36px; color: var(--accent); line-height: 1; }
-.method-card h4 { font-size: 13px; font-weight: 700; color: var(--text); margin: 10px 0 6px; }
-.method-card p { font-size: 13px; }
+.meth-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+.meth-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:18px}
+.meth-num{font-family:Georgia,serif;font-size:32px;color:var(--accent);line-height:1;margin-bottom:8px}
+.meth-card h4{font-size:12px;font-weight:700;color:var(--text);margin-bottom:6px}
 
-/* ── Critical issue ── */
-.critical-banner {
-  background: color-mix(in srgb, var(--critical) 10%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--critical) 30%, transparent);
-  border-radius: 6px;
-  padding: 20px 24px;
-  margin-top: 20px;
-}
-.critical-banner h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .14em; color: var(--critical); font-weight: 700; margin-bottom: 8px; }
-.critical-banner p { font-size: 14px; color: var(--text-2); }
-.critical-banner code {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  background: color-mix(in srgb, var(--critical) 12%, transparent);
-  color: var(--critical);
-  padding: 2px 6px;
-  border-radius: 3px;
-}
-.impact-row {
-  display: flex;
-  gap: 16px;
-  margin-top: 16px;
-  flex-wrap: wrap;
-}
-.impact-pill {
-  display: flex; align-items: center; gap: 8px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 8px 14px;
-}
-.impact-pill .ip-icon { font-size: 18px; }
-.impact-pill .ip-text { font-size: 12px; color: var(--text); font-weight: 600; }
-.impact-pill .ip-sub { font-size: 11px; color: var(--text-2); }
+/* ── Critical ── */
+.crit-banner{background:color-mix(in srgb,var(--crit) 8%,var(--surface));border:1px solid color-mix(in srgb,var(--crit) 25%,transparent);border-radius:6px;padding:16px 20px;margin-top:14px}
+.crit-banner h4{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--crit);font-weight:700;margin-bottom:6px}
+.crit-banner code{font-family:'Courier New',monospace;font-size:11px;background:color-mix(in srgb,var(--crit) 12%,transparent);color:var(--crit);padding:1px 5px;border-radius:3px}
+.impact-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+.impact-pill{background:var(--card);border:1px solid var(--border);border-radius:4px;padding:7px 12px;display:flex;align-items:center;gap:8px}
+.ip-icon{font-size:16px}
+.ip-title{font-size:11px;font-weight:600;color:var(--text)}
+.ip-sub{font-size:10px;color:var(--text2)}
+.fix-steps{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.fix-step{display:flex;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:5px;padding:10px 14px;align-items:flex-start}
+.fix-n{width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--bg);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fix-t{font-size:12px;color:var(--text2);line-height:1.5}
 
-/* ── Fix steps ── */
-.fix-steps { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-.fix-step {
-  display: flex; gap: 14px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 14px 18px;
-  align-items: flex-start;
-}
-.fix-step-num {
-  width: 24px; height: 24px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: var(--bg);
-  font-size: 12px;
-  font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.fix-step-text { font-size: 13px; color: var(--text-2); line-height: 1.5; }
-.fix-step-text strong { color: var(--text); }
+/* ── Sug header ── */
+.sug-hdr{display:flex;align-items:flex-start;gap:16px;flex-shrink:0}
+.sug-num{font-family:Georgia,serif;font-size:52px;color:var(--border);line-height:1;flex-shrink:0;margin-top:-6px}
+.sug-hdr-text{flex:1}
 
-/* ── 4-quadrant suggestion ── */
-.quad-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 14px;
-  margin-top: 24px;
-  flex: 1;
-}
-.quad {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 18px 20px;
-  display: flex;
-  flex-direction: column;
-}
-.quad p, .quad li { font-size: 13px; }
-.quad ul { padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
-.stat-highlight {
-  display: inline-block;
-  font-family: Georgia, serif;
-  font-size: 28px;
-  color: var(--accent);
-  line-height: 1;
-  margin-bottom: 4px;
-}
-.vs-row { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
-.vs-pill {
-  background: var(--card2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-size: 12px;
-}
-.vs-pill .vs-label { color: var(--text-2); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
-.vs-pill .vs-val { color: var(--text); font-weight: 600; }
+/* ── Impl table ── */
+.impl-wrap{overflow-x:auto;margin-top:16px;flex:1}
+table.impl{width:100%;border-collapse:collapse}
+table.impl th{font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);font-weight:700;padding:8px 12px;background:var(--card);border-bottom:2px solid var(--border);text-align:left;white-space:nowrap}
+table.impl td{font-size:12px;color:var(--text2);padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.impl tr:last-child td{border-bottom:none}
+table.impl tr:nth-child(even) td{background:color-mix(in srgb,var(--card) 40%,transparent)}
+.pb{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:3px}
+.pb-c{background:color-mix(in srgb,var(--crit) 15%,transparent);color:var(--crit)}
+.pb-h{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.pb-m{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.eff{display:inline-flex;gap:3px}
+.eff span{width:7px;height:7px;border-radius:50%;background:var(--border)}
+.eff span.on{background:var(--accent)}
 
-/* ── Implementation plan ── */
-.impl-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 22px;
-  overflow-x: auto;
-  display: block;
-}
-.impl-table th {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: .14em;
-  color: var(--accent);
-  font-weight: 700;
-  padding: 10px 14px;
-  background: var(--card);
-  border-bottom: 2px solid var(--border);
-  text-align: left;
-  white-space: nowrap;
-}
-.impl-table td {
-  font-size: 13px;
-  color: var(--text-2);
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: middle;
-}
-.impl-table tr:last-child td { border-bottom: none; }
-.impl-table tr:nth-child(even) td { background: color-mix(in srgb, var(--card) 50%, transparent); }
-.prio-badge {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .09em;
-  padding: 2px 8px;
-  border-radius: 3px;
-}
-.prio-critical { background: color-mix(in srgb, var(--critical) 18%, transparent); color: var(--critical); }
-.prio-high { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
-.prio-medium { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
-.effort-dot {
-  display: inline-flex;
-  gap: 3px;
-}
-.effort-dot span {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--border);
-}
-.effort-dot span.on { background: var(--accent); }
-
-/* ── Suggestion slide header ── */
-.sug-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-.sug-header-text { flex: 1; min-width: 260px; }
-.sug-num {
-  font-family: Georgia, serif;
-  font-size: 56px;
-  color: var(--border);
-  line-height: 1;
-  flex-shrink: 0;
-  margin-top: -8px;
-}
-
-/* ── Scroll hint ── */
-.scroll-hint {
-  font-size: 10px;
-  color: var(--text-2);
-  text-align: center;
-  margin-top: 12px;
-  opacity: 0.6;
-  letter-spacing: .08em;
-}
-
-/* ── Mobile ── */
-@media (max-width: 700px) {
-  .slide { padding: 32px 22px 52px; }
-  .leather-accent { display: none; }
-  .quad-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
-  .overview-grid, .method-grid { grid-template-columns: 1fr; }
-  #next { right: 30px; }
+@media(max-width:700px){
+  .slide{padding:28px 18px 50px}
+  .s1-right,.leather-accent{display:none}
+  .mockup-wrap{grid-template-columns:1fr}
+  .ov-grid,.meth-grid{grid-template-columns:1fr}
+  .bottom-bar{grid-template-columns:1fr}
+  #next{right:28px}
 }
 </style>
 </head>
 <body>
 <div id="progress"></div>
-
 <div id="dots"></div>
-
-<button class="arrow" id="prev" aria-label="Previous slide">&#8592;</button>
-<button class="arrow" id="next" aria-label="Next slide">&#8594;</button>
-
+<button class="arrow" id="prev">&#8592;</button>
+<button class="arrow" id="next">&#8594;</button>
 <div id="counter"></div>
 
 <div id="deck">
 
-<!-- ════════════════════════════════════════
-     SLIDE 1 — TITLE
-     ════════════════════════════════════════ -->
+<!-- ══ S1 TITLE ══ -->
 <section class="slide" id="s1">
-  <div class="title-badge"><span>FastTrack CRO Analysis</span></div>
-  <h1 class="deck-title">Sundance Leather<br>Conversion Rate<br>Optimization Report</h1>
+  <div class="eyebrow">FastTrack CRO Analysis</div>
+  <h1>Sundance Leather<br>Conversion Rate<br>Optimization Report</h1>
   <div class="rule"></div>
-  <p class="subtitle">Full-site audit identifying critical revenue leaks and the highest-impact quick wins to increase conversions without changing your products or prices.</p>
+  <p style="max-width:440px;font-size:14px">Full-site audit identifying critical revenue leaks and the highest-impact quick wins to increase conversions — without changing your products or prices.</p>
   <div class="meta-row">
-    <div class="meta-item"><span class="meta-label">Website</span><span class="meta-value">sundanceleather.com</span></div>
-    <div class="meta-item"><span class="meta-label">Platform</span><span class="meta-value">Shift4Shop</span></div>
-    <div class="meta-item"><span class="meta-label">Audit Date</span><span class="meta-value">August 2026</span></div>
-    <div class="meta-item"><span class="meta-label">Pages Audited</span><span class="meta-value">12+</span></div>
+    <div class="meta-item"><span class="meta-lbl">Website</span><span class="meta-val">sundanceleather.com</span></div>
+    <div class="meta-item"><span class="meta-lbl">Platform</span><span class="meta-val">Shift4Shop</span></div>
+    <div class="meta-item"><span class="meta-lbl">Audit Date</span><span class="meta-val">August 2026</span></div>
+    <div class="meta-item"><span class="meta-lbl">Pages Audited</span><span class="meta-val">12+</span></div>
   </div>
-  <div class="leather-accent">
-    <div class="stat-big"><div class="num">2</div><div class="unit">Critical Issues Found</div></div>
-    <div class="stat-divider"></div>
-    <div class="stat-big"><div class="num">10</div><div class="unit">High-Impact Opportunities</div></div>
-    <div class="stat-divider"></div>
-    <div class="stat-big"><div class="num">150+</div><div class="unit">Existing Reviews — Unused</div></div>
+  <div class="s1-right">
+    <div class="hero-stat"><div class="n">2</div><div class="u">Critical Issues</div></div>
+    <div class="hero-divider"></div>
+    <div class="hero-stat"><div class="n">10</div><div class="u">CRO Opportunities</div></div>
+    <div class="hero-divider"></div>
+    <div class="hero-stat"><div class="n">150+</div><div class="u">Reviews Unused</div></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 2 — SITE OVERVIEW
-     ════════════════════════════════════════ -->
+<!-- ══ S2 OVERVIEW ══ -->
 <section class="slide" id="s2">
-  <div class="slide-label">Site Overview</div>
-  <h2 class="slide-title">About Sundance Leather</h2>
+  <div class="eyebrow">Site Overview</div>
+  <h2>About Sundance Leather</h2>
   <div class="rule"></div>
-  <div class="overview-grid">
-    <div class="overview-card">
-      <div class="oc-label">What They Sell</div>
-      <div class="oc-value">Handcrafted leather footwear</div>
-      <div class="oc-sub">Moccasins, boots, sandals — made in the USA since 1972</div>
-    </div>
-    <div class="overview-card">
-      <div class="oc-label">Platform</div>
-      <div class="oc-value">Shift4Shop (formerly 3DCart)</div>
-      <div class="oc-sub">Legacy domain alias still active on some live links</div>
-    </div>
-    <div class="overview-card">
-      <div class="oc-label">Audience</div>
-      <div class="oc-value">Quality-conscious buyers</div>
-      <div class="oc-sub">Seeking durable, authentic American-made footwear</div>
-    </div>
-    <div class="overview-card">
-      <div class="oc-label">Existing Social Proof</div>
-      <div class="oc-value">150+ product reviews (4.97★ average)</div>
-      <div class="oc-sub">None surfaced on homepage or near purchase decisions</div>
-    </div>
-    <div class="overview-card">
-      <div class="oc-label">Return Policy</div>
-      <div class="oc-value">90-day guarantee + hassle-free exchanges</div>
-      <div class="oc-sub">BURIED on shipping/returns page — not visible on product pages</div>
-    </div>
-    <div class="overview-card">
-      <div class="oc-label">Pages Audited</div>
-      <div class="oc-value">Homepage, PDPs, Category, Cart, Contact</div>
-      <div class="oc-sub">Also: About, Size Guide, Testimonials, Shipping, Returns, Login</div>
-    </div>
+  <div class="ov-grid">
+    <div class="ov-card"><div class="ov-lbl">What They Sell</div><div class="ov-val">Handcrafted leather footwear</div><div class="ov-sub">Moccasins, boots, sandals — made in the USA since 1972</div></div>
+    <div class="ov-card"><div class="ov-lbl">Platform</div><div class="ov-val">Shift4Shop (3DCart)</div><div class="ov-sub">Legacy domain alias still active on live navigation links</div></div>
+    <div class="ov-card"><div class="ov-lbl">Audience</div><div class="ov-val">Quality-conscious buyers</div><div class="ov-sub">Seeking durable, authentic American-made footwear</div></div>
+    <div class="ov-card"><div class="ov-lbl">Existing Social Proof</div><div class="ov-val">150+ reviews — 4.97★ avg</div><div class="ov-sub">None surfaced on homepage or near purchase buttons</div></div>
+    <div class="ov-card"><div class="ov-lbl">Return Policy</div><div class="ov-val">90-day satisfaction guarantee</div><div class="ov-sub">Buried on Shipping/Returns page — invisible on product pages</div></div>
+    <div class="ov-card"><div class="ov-lbl">Pages Audited</div><div class="ov-val">Homepage · PDPs · Category · Cart</div><div class="ov-sub">About, Size Guide, Testimonials, Shipping, Returns, Login</div></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 3 — METHODOLOGY
-     ════════════════════════════════════════ -->
+<!-- ══ S3 METHODOLOGY ══ -->
 <section class="slide" id="s3">
-  <div class="slide-label">Our Approach</div>
-  <h2 class="slide-title">FastTrack CRO Methodology</h2>
+  <div class="eyebrow">Our Approach</div>
+  <h2>FastTrack CRO Methodology</h2>
   <div class="rule"></div>
-  <p style="max-width:560px">The FastTrack CRO process applies the 80/20 principle: identify the 20% of changes that drive 80% of conversion lift. Every recommendation is tied to published data, case studies, and directly observable issues on your site.</p>
-  <div class="method-grid">
-    <div class="method-card">
-      <div class="method-num">01</div>
-      <h4>Audit the Buyer Journey</h4>
-      <p>Walk every path from landing to checkout — homepage, category, product detail, cart, contact — identifying friction, missing signals, and broken trust at each step.</p>
-    </div>
-    <div class="method-card">
-      <div class="method-num">02</div>
-      <h4>Evidence-Backed Fixes Only</h4>
-      <p>Every suggestion is anchored to third-party research (Baymard, Nielsen Norman, Unbounce) and/or real A/B test results from comparable e-commerce sites.</p>
-    </div>
-    <div class="method-card">
-      <div class="method-num">03</div>
-      <h4>Quick Wins First</h4>
-      <p>Prioritize changes that can be live within 1–2 weeks — copy edits, badge placement, trust signals — before tackling structural or code-intensive changes.</p>
-    </div>
+  <p style="max-width:540px">The FastTrack process applies the 80/20 principle — identify the 20% of changes that drive 80% of conversion lift. Every recommendation is anchored to published research and directly observable issues on your site.</p>
+  <div class="meth-grid">
+    <div class="meth-card"><div class="meth-num">01</div><h4>Audit the Buyer Journey</h4><p>Walk every path from landing to checkout — identifying friction, missing trust signals, and broken experiences at each step.</p></div>
+    <div class="meth-card"><div class="meth-num">02</div><h4>Evidence-Backed Fixes Only</h4><p>Every suggestion is anchored to third-party research (Baymard, Nielsen Norman, Unbounce) and real A/B test results from comparable e-commerce sites.</p></div>
+    <div class="meth-card"><div class="meth-num">03</div><h4>Quick Wins First</h4><p>Prioritize changes live within 1–2 weeks — copy edits, badge placement, trust signals — before tackling structural or code-intensive work.</p></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 4 — CRITICAL ISSUE #1
-     ════════════════════════════════════════ -->
+<!-- ══ S4 CRITICAL #1 — Legacy links ══ -->
 <section class="slide" id="s4">
-  <div class="slide-label">Critical Issue #1</div>
-  <h2 class="slide-title">Legacy Domain Links Active<br>on Every Page</h2>
+  <div class="eyebrow">Critical Issue #1</div>
+  <h2>Legacy Domain Links Active<br>on Every Page</h2>
   <div class="rule"></div>
-  <span class="tag tag-critical">Fix Immediately — Revenue Risk</span>
-  <div class="critical-banner" style="margin-top:18px">
-    <h4>What We Found</h4>
-    <p>The <strong>"Why Buy Sundance?"</strong> sidebar link in your navigation points to the old Shift4Shop staging domain: <code>sundanceleather-com.3dcartstores.com</code>. This link appears on every page of your site. While it currently redirects, staging domains are unstable — any infrastructure change at Shift4Shop breaks this link sitewide, sending customers to a dead page at the moment they're most ready to buy.</p>
-  </div>
-  <div class="impact-row">
-    <div class="impact-pill">
-      <div class="ip-icon">⚠️</div>
-      <div><div class="ip-text">Appears on Every Page</div><div class="ip-sub">Header/sidebar navigation</div></div>
+  <span class="tag tag-crit">Fix Immediately — Revenue Risk</span>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;flex:1">
+    <div>
+      <div class="crit-banner">
+        <h4>What We Found</h4>
+        <p>The <strong>"Why Buy Sundance?"</strong> sidebar link on every page points to the old staging domain: <code>sundanceleather-com.3dcartstores.com</code>. While it currently redirects, staging domains are unstable — any Shift4Shop infrastructure change breaks this link sitewide, sending buyers to a dead page at their peak purchase intent moment.</p>
+      </div>
+      <div class="impact-row">
+        <div class="impact-pill"><div class="ip-icon">⚠️</div><div><div class="ip-title">Appears on Every Page</div><div class="ip-sub">Header/sidebar nav</div></div></div>
+        <div class="impact-pill"><div class="ip-icon">💰</div><div><div class="ip-title">Trust Page at Decision Moment</div><div class="ip-sub">Buyers click "Why Buy?" pre-purchase</div></div></div>
+      </div>
+      <div class="fix-steps">
+        <div class="fix-step"><div class="fix-n">1</div><div class="fix-t">Shift4Shop admin → Navigation → Find <strong>"Why Buy Sundance?"</strong></div></div>
+        <div class="fix-step"><div class="fix-n">2</div><div class="fix-t">Replace with: <strong>sundanceleather.com/Made-in-the-USA_ep_48-1.html</strong></div></div>
+        <div class="fix-step"><div class="fix-n">3</div><div class="fix-t">Search all templates for <strong>3dcartstores.com</strong> and update every instance</div></div>
+        <div class="fix-step"><div class="fix-n">4</div><div class="fix-t">Time: <strong>30–60 min</strong>. Risk if ignored: sitewide broken link on next platform update</div></div>
+      </div>
     </div>
-    <div class="impact-pill">
-      <div class="ip-icon">🔗</div>
-      <div><div class="ip-text">Staging Domain Dependency</div><div class="ip-sub">sundanceleather-com.3dcartstores.com</div></div>
+    <!-- MOCKUP -->
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="mockup-label before"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="3" x2="6" y2="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="8.5" r=".7" fill="currentColor"/></svg> CURRENT STATE — Problem Highlighted</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com/</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span><div class="pg-nav"><span>Shop</span><span>About</span><span>Contact</span></div><span class="pg-search-icon">🔍</span></div>
+          <div style="display:flex;flex:1">
+            <!-- sidebar -->
+            <div style="width:90px;background:#f0e8d8;border-right:1px solid #ddd;padding:6px;flex-shrink:0">
+              <div style="font-size:7px;font-weight:700;color:#3d2a14;margin-bottom:4px">Categories</div>
+              <div style="font-size:7px;color:#5a4228;margin-bottom:2px">Moccasins</div>
+              <div style="font-size:7px;color:#5a4228;margin-bottom:2px">Boots</div>
+              <div style="font-size:7px;color:#5a4228;margin-bottom:6px">Sandals</div>
+              <div style="position:relative">
+                <div class="pg-sidebar-link bad">Why Buy Sundance?</div>
+                <div style="position:absolute;top:-16px;left:0;background:#B83030;color:#fff;font-size:6px;padding:1px 4px;border-radius:2px;white-space:nowrap">⚠ 3dcartstores.com domain!</div>
+              </div>
+              <div style="font-size:6px;color:#B83030;margin-top:3px;line-height:1.3">Links to old<br>staging server</div>
+            </div>
+            <!-- main -->
+            <div style="flex:1;display:flex;flex-direction:column">
+              <div class="pg-hero" style="min-height:80px"><div class="pg-hero-text">Handcrafted Leather<br>Since 1972</div></div>
+              <div class="pg-products" style="grid-template-columns:1fr 1fr">
+                <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Colorado Moccasin</div><div class="pg-prod-price">$149</div><div class="pg-prod-btn">Select Options</div></div>
+                <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Trail Boot</div><div class="pg-prod-price">$189</div><div class="pg-prod-btn">Select Options</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mockup-label after" style="margin-top:4px"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> AFTER FIX</div>
+      <div class="browser">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com/</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span><div class="pg-nav"><span>Shop</span><span>About</span><span>Contact</span></div></div>
+          <div style="display:flex">
+            <div style="width:90px;background:#f0e8d8;border-right:1px solid #ddd;padding:6px;flex-shrink:0">
+              <div style="font-size:7px;font-weight:700;color:#3d2a14;margin-bottom:4px">Categories</div>
+              <div style="font-size:7px;color:#5a4228;margin-bottom:2px">Moccasins</div>
+              <div style="font-size:7px;color:#5a4228;margin-bottom:6px">Boots</div>
+              <div class="pg-sidebar-link good">Why Buy Sundance?</div>
+              <div style="font-size:6px;color:#3A7A52;margin-top:3px">✓ sundanceleather.com</div>
+            </div>
+            <div style="flex:1">
+              <div class="pg-hero" style="min-height:60px"><div class="pg-hero-text">Handcrafted Leather<br>Since 1972</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="impact-pill">
-      <div class="ip-icon">💰</div>
-      <div><div class="ip-text">Trust Page Broken at Checkout Decision</div><div class="ip-sub">Buyers click "Why Buy?" before purchasing</div></div>
-    </div>
-  </div>
-  <div class="fix-steps">
-    <div class="fix-step"><div class="fix-step-num">1</div><div class="fix-step-text">Log into Shift4Shop admin → Navigation → Find "Why Buy Sundance?" link</div></div>
-    <div class="fix-step"><div class="fix-step-num">2</div><div class="fix-step-text">Replace URL with <strong>https://www.sundanceleather.com/Made-in-the-USA_ep_48-1.html</strong> (the final destination page)</div></div>
-    <div class="fix-step"><div class="fix-step-num">3</div><div class="fix-step-text">Audit all remaining internal links — search HTML/templates for <strong>3dcartstores.com</strong> and update each</div></div>
-    <div class="fix-step"><div class="fix-step-num">4</div><div class="fix-step-text">Time investment: <strong>30–60 minutes</strong>. Risk if ignored: sitewide broken link on next Shift4Shop platform update</div></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 5 — CRITICAL ISSUE #2
-     ════════════════════════════════════════ -->
+<!-- ══ S5 CRITICAL #2 — noindex ══ -->
 <section class="slide" id="s5">
-  <div class="slide-label">Critical Issue #2</div>
-  <h2 class="slide-title">About Us Page Is Invisible<br>to Google</h2>
+  <div class="eyebrow">Critical Issue #2</div>
+  <h2>About Us Page Is Invisible<br>to Google</h2>
   <div class="rule"></div>
-  <span class="tag tag-critical">Fix Immediately — SEO &amp; Trust Risk</span>
-  <div class="critical-banner" style="margin-top:18px">
-    <h4>What We Found</h4>
-    <p>Your About Us page contains the meta tag: <code>googlebot: noindex,indexifembedded</code>. This tells Google's crawler to exclude the page from search results entirely. For a brand founded in 1972 with a compelling heritage story, your "About Us" is one of your most powerful trust-building and SEO assets — and Google currently cannot index it.</p>
-  </div>
-  <div class="impact-row">
-    <div class="impact-pill">
-      <div class="ip-icon">🔍</div>
-      <div><div class="ip-text">Not Indexed by Google</div><div class="ip-sub">noindex meta tag active</div></div>
+  <span class="tag tag-crit">Fix Immediately — SEO &amp; Trust Risk</span>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;flex:1">
+    <div>
+      <div class="crit-banner">
+        <h4>What We Found</h4>
+        <p>Your About Us page contains: <code>googlebot: noindex,indexifembedded</code> — telling Google's crawler to exclude the page entirely from search results. For a brand founded in 1972 with a compelling heritage story, your About page is one of your most powerful trust-building and SEO assets. Google currently cannot index it.</p>
+      </div>
+      <div class="impact-row">
+        <div class="impact-pill"><div class="ip-icon">🔍</div><div><div class="ip-title">Not Indexed by Google</div><div class="ip-sub">noindex meta tag active</div></div></div>
+        <div class="impact-pill"><div class="ip-icon">📉</div><div><div class="ip-title">Zero Brand Search Visibility</div><div class="ip-sub">"About Sundance Leather" → no result</div></div></div>
+        <div class="impact-pill"><div class="ip-icon">🏆</div><div><div class="ip-title">54-Year Heritage Story Hidden</div><div class="ip-sub">Competitors rank; you don't</div></div></div>
+      </div>
+      <div class="fix-steps">
+        <div class="fix-step"><div class="fix-n">1</div><div class="fix-t">Shift4Shop admin → About Us page → SEO settings tab</div></div>
+        <div class="fix-step"><div class="fix-n">2</div><div class="fix-t">Remove <code>noindex,indexifembedded</code> → set to <strong>index,follow</strong></div></div>
+        <div class="fix-step"><div class="fix-n">3</div><div class="fix-t">Google Search Console → URL Inspection → Request Indexing</div></div>
+        <div class="fix-step"><div class="fix-n">4</div><div class="fix-t">Time: <strong>15 minutes</strong>. Indexing takes 1–4 weeks; fix is instant.</div></div>
+      </div>
     </div>
-    <div class="impact-pill">
-      <div class="ip-icon">📉</div>
-      <div><div class="ip-text">Zero Brand Search Visibility</div><div class="ip-sub">"About Sundance Leather" returns no result</div></div>
+    <!-- MOCKUP: source code view -->
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="mockup-label before"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="3" x2="6" y2="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="8.5" r=".7" fill="currentColor"/></svg> CURRENT — Page Source</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com/about-us.html</div></div>
+        <div class="browser-body" style="padding:10px;font-family:monospace;font-size:9px;color:#333;line-height:1.7;background:#1e1e1e;color:#d4d4d4">
+          <span style="color:#569cd6">&lt;head&gt;</span><br>
+          &nbsp;&nbsp;<span style="color:#9cdcfe">&lt;title&gt;</span><span style="color:#ce9178">About Sundance Leather</span><span style="color:#9cdcfe">&lt;/title&gt;</span><br>
+          &nbsp;&nbsp;<span style="background:#B83030;color:#fff;padding:1px 3px;border-radius:2px">&lt;meta name="googlebot" content="noindex,indexifembedded"&gt;</span><br>
+          &nbsp;&nbsp;<span style="color:#9cdcfe">&lt;meta name="description"</span><span style="color:#d4d4d4">...</span><br>
+          <span style="color:#569cd6">&lt;/head&gt;</span><br>
+          <span style="color:#569cd6">&lt;body&gt;</span><br>
+          &nbsp;&nbsp;<span style="color:#d4d4d4;opacity:.5">... page content ...</span><br>
+          <span style="color:#569cd6">&lt;/body&gt;</span>
+          <div style="margin-top:8px;background:#B83030;color:#fff;font-size:8px;padding:4px 8px;border-radius:3px">⛔ Google sees this tag and SKIPS indexing the entire page</div>
+        </div>
+      </div>
+      <div class="mockup-label after" style="margin-top:4px"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> AFTER FIX — Source Code</div>
+      <div class="browser">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com/about-us.html</div></div>
+        <div class="browser-body" style="padding:10px;font-family:monospace;font-size:9px;line-height:1.7;background:#1e1e1e;color:#d4d4d4">
+          <span style="color:#569cd6">&lt;head&gt;</span><br>
+          &nbsp;&nbsp;<span style="color:#9cdcfe">&lt;title&gt;</span><span style="color:#ce9178">About Sundance Leather</span><span style="color:#9cdcfe">&lt;/title&gt;</span><br>
+          &nbsp;&nbsp;<span style="background:#3A7A52;color:#fff;padding:1px 3px;border-radius:2px">&lt;meta name="robots" content="index,follow"&gt;</span><br>
+          &nbsp;&nbsp;<span style="color:#9cdcfe">&lt;meta name="description"</span><span style="color:#d4d4d4">...</span><br>
+          <span style="color:#569cd6">&lt;/head&gt;</span><br>
+          <span style="color:#569cd6">&lt;body&gt;</span><br>
+          &nbsp;&nbsp;<span style="color:#d4d4d4;opacity:.5">... page content ...</span><br>
+          <span style="color:#569cd6">&lt;/body&gt;</span>
+          <div style="margin-top:8px;background:#3A7A52;color:#fff;font-size:8px;padding:4px 8px;border-radius:3px">✓ Google can now index and rank your heritage story page</div>
+        </div>
+      </div>
     </div>
-    <div class="impact-pill">
-      <div class="ip-icon">🏆</div>
-      <div><div class="ip-text">54-Year Heritage Story Not Ranking</div><div class="ip-sub">Competitors rank for brand + "since 1972" terms</div></div>
-    </div>
-  </div>
-  <div class="fix-steps">
-    <div class="fix-step"><div class="fix-step-num">1</div><div class="fix-step-text">Open About Us page in Shift4Shop admin → Page SEO settings → Remove or change the robots directive</div></div>
-    <div class="fix-step"><div class="fix-step-num">2</div><div class="fix-step-text">Replace <code>noindex,indexifembedded</code> with <strong>index,follow</strong> (or remove the tag entirely)</div></div>
-    <div class="fix-step"><div class="fix-step-num">3</div><div class="fix-step-text">Submit page to Google Search Console → URL Inspection → Request Indexing</div></div>
-    <div class="fix-step"><div class="fix-step-num">4</div><div class="fix-step-text">Time investment: <strong>15 minutes</strong>. Indexing may take 1–4 weeks but the fix is instant</div></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 6 — SUGGESTION 1: Hero CTA
-     ════════════════════════════════════════ -->
+<!-- ══ S6 — Hero CTA ══ -->
 <section class="slide" id="s6">
-  <div class="sug-header">
+  <div class="sug-hdr">
     <div class="sug-num">01</div>
-    <div class="sug-header-text">
-      <div class="slide-label">CRO Suggestion</div>
-      <h2 class="slide-title">Add a Direct CTA Button<br>to the Hero Carousel</h2>
+    <div class="sug-hdr-text">
+      <div class="eyebrow">CRO Suggestion</div>
+      <h2>Add a CTA Button to the<br>Hero Carousel</h2>
       <div class="rule"></div>
       <span class="tag tag-quick">Quick Win — 1 Day</span>
     </div>
   </div>
-  <div class="quad-grid">
-    <div class="quad">
-      <h3 class="quad-head">📊 Case Study / Data</h3>
-      <div class="stat-highlight">80%</div>
-      <p>Nielsen Norman Group research shows <strong>80% of user attention</strong> is spent above the fold. Hero sections without a clear CTA button lose the majority of visitor intent within seconds of landing.</p>
+  <div class="mockup-wrap">
+    <div class="mockup-col">
+      <div class="mockup-label before"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="3" x2="6" y2="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="8.5" r=".7" fill="currentColor"/></svg> CURRENT — No CTA in Hero</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span><div class="pg-nav"><span>Moccasins</span><span>Boots</span><span>Sandals</span></div><span class="pg-search-icon" title="Hidden search">🔍</span></div>
+          <div class="pg-hero" style="min-height:120px;flex-direction:column;justify-content:center">
+            <div class="pg-hero-text" style="position:relative;transform:none;top:auto;left:auto">
+              <div style="color:#d4a86a;font-size:11px;font-family:Georgia,serif;margin-bottom:6px">Handcrafted Leather<br>Moccasins &amp; Boots</div>
+              <div style="color:#c8a87a;font-size:8px">Made in the USA since 1972</div>
+            </div>
+            <!-- no button! -->
+            <div style="border:2px dashed #B83030;border-radius:4px;padding:4px 10px;margin-top:8px;background:rgba(184,48,48,.1)">
+              <div style="font-size:7px;color:#B83030;font-weight:700">⚠ No CTA button here</div>
+            </div>
+          </div>
+          <div class="pg-products">
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Colorado</div><div class="pg-prod-btn">Select Options</div></div>
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Trail Boot</div><div class="pg-prod-btn">Select Options</div></div>
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Sandal</div><div class="pg-prod-btn">Select Options</div></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">📍 Current Scenario</h3>
-      <p>Your homepage carousel rotates through product images with no call-to-action button overlay. Visitors who arrive ready to shop see a beautiful image but have no obvious next step — they must independently find the navigation or scroll to "Featured Products."</p>
+    <div class="mockup-col">
+      <div class="mockup-label after"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> AFTER — Clear CTA Added</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span><div class="pg-nav"><span>Moccasins</span><span>Boots</span><span>Sandals</span></div></div>
+          <div class="pg-hero" style="min-height:120px;flex-direction:column;justify-content:center;align-items:center">
+            <div style="color:#d4a86a;font-size:11px;font-family:Georgia,serif;margin-bottom:6px;text-align:center">Handcrafted Leather<br>Moccasins &amp; Boots</div>
+            <div style="color:#c8a87a;font-size:8px;margin-bottom:10px">Made in the USA since 1972</div>
+            <div style="background:#c4762a;color:#fff;font-size:9px;padding:5px 14px;border-radius:3px;font-weight:700;border:2px solid #5C9E74">Shop Moccasins →</div>
+          </div>
+          <div class="pg-products">
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Colorado</div><div class="pg-prod-btn good">Shop Now</div></div>
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Trail Boot</div><div class="pg-prod-btn good">Shop Now</div></div>
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Sandal</div><div class="pg-prod-btn good">Shop Now</div></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">✅ Recommendation</h3>
-      <ul>
-        <li>Add a leather-toned CTA button to each carousel slide, e.g. <strong>"Shop Moccasins"</strong>, <strong>"Explore Boots"</strong></li>
-        <li>Position button center-bottom of each slide image</li>
-        <li>Use high-contrast button (cognac on dark or white on image)</li>
-        <li>Ensure each slide links directly to its corresponding category page</li>
-      </ul>
-    </div>
-    <div class="quad">
-      <h3 class="quad-head">🏪 Competitor Example</h3>
-      <p><strong>Minnetonka Moccasin</strong> and <strong>Frye Boots</strong> both place "Shop Now" and "Explore Collection" buttons directly on hero images with high-contrast overlays — guiding visitors to category pages within 2 seconds of landing, eliminating the search for next steps.</p>
-    </div>
+  </div>
+  <div class="bottom-bar">
+    <div class="stat-chip"><div class="stat-num">80%</div><div class="stat-body"><div class="stat-title">of attention is spent above the fold</div><div class="stat-sub">Nielsen Norman Group — hero sections without a CTA button waste majority of visitor intent</div></div></div>
+    <div class="comp-chip"><div class="comp-label">Competitor Example</div><div class="comp-text"><strong>Minnetonka</strong> &amp; <strong>Frye Boots</strong> both place "Shop Now" / "Explore Collection" buttons directly on hero images — guiding visitors to category pages within 2 seconds of landing.</div></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 7 — SUGGESTION 2: Search Bar
-     ════════════════════════════════════════ -->
+<!-- ══ S7 — Search Bar ══ -->
 <section class="slide" id="s7">
-  <div class="sug-header">
+  <div class="sug-hdr">
     <div class="sug-num">02</div>
-    <div class="sug-header-text">
-      <div class="slide-label">CRO Suggestion</div>
-      <h2 class="slide-title">Make the Search Bar Visible<br>in the Header</h2>
+    <div class="sug-hdr-text">
+      <div class="eyebrow">CRO Suggestion</div>
+      <h2>Make the Search Bar Visible<br>in the Header</h2>
       <div class="rule"></div>
       <span class="tag tag-quick">Quick Win — 2 Days</span>
     </div>
   </div>
-  <div class="quad-grid">
-    <div class="quad">
-      <h3 class="quad-head">📊 Case Study / Data</h3>
-      <div class="stat-highlight">+9% CVR</div>
-      <p>LYST (fashion e-commerce) found that making search visible (vs. hidden behind icon) increased search usage by <strong>+43%</strong> and overall conversion rate by <strong>+9%</strong>. Baymard Institute: shoppers who use search convert at <strong>2–3x</strong> the rate of those who browse.</p>
+  <div class="mockup-wrap">
+    <div class="mockup-col">
+      <div class="mockup-label before"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="3" x2="6" y2="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="8.5" r=".7" fill="currentColor"/></svg> CURRENT — Hidden Icon</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com</div></div>
+        <div class="browser-body">
+          <div class="pg-header" style="position:relative">
+            <span class="pg-logo">SUNDANCE LEATHER</span>
+            <div class="pg-nav"><span>Moccasins</span><span>Boots</span><span>Sandals</span><span>Sale</span></div>
+            <div style="position:relative">
+              <span class="pg-search-icon">🔍</span>
+              <div style="position:absolute;top:-18px;right:0;background:#B83030;color:#fff;font-size:6px;padding:1px 5px;border-radius:2px;white-space:nowrap">Tiny icon — easy to miss!</div>
+            </div>
+          </div>
+          <div class="pg-hero" style="min-height:100px">
+            <div class="pg-hero-text">Handcrafted Leather Since 1972</div>
+          </div>
+          <div style="padding:8px 10px;font-size:8px;color:#B83030;background:color-mix(in srgb,#B83030 8%,#fff)">
+            ⚠ Customers looking for "black moccasin size 10" must discover the hidden icon before they can search — many give up and leave.
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">📍 Current Scenario</h3>
-      <p>Your search function is hidden behind a small magnifying glass icon in the top-right corner. On a site with 12 categories and dozens of SKUs across multiple sizing systems, customers looking for a specific style — e.g. "black moccasin size 10" — cannot find it without discovering the hidden icon first.</p>
+    <div class="mockup-col">
+      <div class="mockup-label after"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> AFTER — Visible Search Bar</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com</div></div>
+        <div class="browser-body">
+          <div class="pg-header">
+            <span class="pg-logo">SUNDANCE LEATHER</span>
+            <div class="pg-nav"><span>Moccasins</span><span>Boots</span><span>Sandals</span></div>
+            <div style="background:#fff;border-radius:10px;padding:3px 10px;font-size:8px;color:#aaa;flex:1;max-width:180px;border:2px solid #5C9E74">🔍 Search styles, sizes…</div>
+          </div>
+          <div class="pg-hero" style="min-height:100px">
+            <div class="pg-hero-text">Handcrafted Leather Since 1972</div>
+          </div>
+          <div style="padding:8px 10px;font-size:8px;color:#3A7A52;background:color-mix(in srgb,#3A7A52 8%,#fff)">
+            ✓ Shoppers who use search convert at 2–3x the rate of browsers (Baymard). Search bar = shorter path to purchase.
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">✅ Recommendation</h3>
-      <ul>
-        <li>Replace the icon with a <strong>visible search bar</strong> in the header, spanning 200–280px</li>
-        <li>Placeholder text: <em>"Search styles, sizes, materials…"</em></li>
-        <li>On mobile, keep the icon but make the expanded bar full-width on tap</li>
-        <li>Enable autocomplete suggestions if your platform supports it</li>
-      </ul>
-    </div>
-    <div class="quad">
-      <h3 class="quad-head">🏪 Competitor Example</h3>
-      <p><strong>Zappos</strong> and <strong>Chaco</strong> feature prominent center-header search bars on all pages. Zappos specifically cites search as one of their top conversion-driving features — helping customers find the right fit faster and reducing frustration-driven exits.</p>
-    </div>
+  </div>
+  <div class="bottom-bar">
+    <div class="stat-chip"><div class="stat-num">+9%</div><div class="stat-body"><div class="stat-title">overall CVR increase</div><div class="stat-sub">LYST (fashion e-commerce): visible search also increased search usage by +43% vs. hidden icon</div></div></div>
+    <div class="comp-chip"><div class="comp-label">Competitor Example</div><div class="comp-text"><strong>Zappos</strong> &amp; <strong>Chaco</strong> feature prominent center-header search bars. Zappos cites search as a top conversion driver — helping customers find the right fit faster and reducing exit rates.</div></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 8 — SUGGESTION 3: Payment Logos
-     ════════════════════════════════════════ -->
+<!-- ══ S8 — Payment Logos ══ -->
 <section class="slide" id="s8">
-  <div class="sug-header">
+  <div class="sug-hdr">
     <div class="sug-num">03</div>
-    <div class="sug-header-text">
-      <div class="slide-label">CRO Suggestion</div>
-      <h2 class="slide-title">Add Payment Method Logos<br>to Footer &amp; Checkout</h2>
+    <div class="sug-hdr-text">
+      <div class="eyebrow">CRO Suggestion</div>
+      <h2>Add Payment Logos to Footer<br>&amp; Product Pages</h2>
       <div class="rule"></div>
       <span class="tag tag-quick">Quick Win — 1 Day</span>
     </div>
   </div>
-  <div class="quad-grid">
-    <div class="quad">
-      <h3 class="quad-head">📊 Case Study / Data</h3>
-      <div class="stat-highlight">6%</div>
-      <p>Baymard Institute's 2022 checkout study found that <strong>6% of shoppers abandon</strong> specifically because they can't see their preferred payment method listed upfront. Payment logos increase checkout confidence before the buyer even clicks "Add to Cart."</p>
+  <div class="mockup-wrap">
+    <div class="mockup-col">
+      <div class="mockup-label before"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="3" x2="6" y2="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="8.5" r=".7" fill="currentColor"/></svg> CURRENT — No Payment Logos</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com</div></div>
+        <div class="browser-body" style="justify-content:space-between">
+          <div>
+            <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+            <div class="pg-hero" style="min-height:70px"><div class="pg-hero-text">Featured Products</div></div>
+          </div>
+          <div>
+            <div class="pg-footer">
+              <div class="pg-footer-text">© 2026 Sundance Leather · All rights reserved</div>
+              <div style="border:2px dashed #B83030;border-radius:3px;padding:4px 6px;margin-top:5px;display:inline-block">
+                <div style="font-size:7px;color:#B83030">⚠ No payment logos — buyers can't confirm Visa/PayPal accepted until checkout</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">📍 Current Scenario</h3>
-      <p>Your footer and product pages display <strong>no payment method logos</strong>. The only trust badge visible is a small RapidSSL seal in the sidebar — which most customers don't recognize or register. First-time buyers have no visual confirmation that Visa, Mastercard, or PayPal are accepted until they reach checkout — a point many never reach.</p>
+    <div class="mockup-col">
+      <div class="mockup-label after"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> AFTER — Trust Logos Added</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com</div></div>
+        <div class="browser-body" style="justify-content:space-between">
+          <div>
+            <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+            <div style="background:#f8f3ed;padding:6px 10px;border-bottom:1px solid #e0d4c0">
+              <div class="pg-atc-btn" style="margin-bottom:0">Add to Cart</div>
+              <div class="pg-payment-row" style="margin-top:5px">
+                <div class="pg-pay visa">VISA</div><div class="pg-pay mc">MC</div><div class="pg-pay amex">AMEX</div><div class="pg-pay pp">PayPal</div>
+                <div style="background:#1a6b1a;color:#fff;font-size:6px;padding:1px 4px;border-radius:2px">🔒 Secure</div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="pg-footer">
+              <div class="pg-footer-text">© 2026 Sundance Leather</div>
+              <div class="pg-payment-row" style="margin-top:4px">
+                <div class="pg-pay visa">VISA</div><div class="pg-pay mc">MC</div><div class="pg-pay amex">AMEX</div><div class="pg-pay pp">PayPal</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">✅ Recommendation</h3>
-      <ul>
-        <li>Add a row of payment logos to the footer: <strong>Visa, MC, Amex, Discover, PayPal</strong></li>
-        <li>Add same row beneath "Add to Cart" on product pages</li>
-        <li>Replace the low-recognition RapidSSL badge with a recognizable <strong>Norton / McAfee / BBB</strong> badge</li>
-        <li>Add a "Secure Checkout" lock icon near the cart CTA</li>
-      </ul>
-    </div>
-    <div class="quad">
-      <h3 class="quad-head">🏪 Competitor Example</h3>
-      <p><strong>Soft Star Shoes</strong> and <strong>Earth Shoes</strong> display Visa/MC/PayPal/Amex logos prominently in their footers and on product pages. This single change is cited as one of the fastest trust-signal wins in e-commerce — free to implement, immediate psychological effect.</p>
-    </div>
+  </div>
+  <div class="bottom-bar">
+    <div class="stat-chip"><div class="stat-num">6%</div><div class="stat-body"><div class="stat-title">of shoppers abandon due to missing payment info</div><div class="stat-sub">Baymard Institute 2022 — payment logos increase checkout confidence before buyers click "Add to Cart"</div></div></div>
+    <div class="comp-chip"><div class="comp-label">Competitor Example</div><div class="comp-text"><strong>Soft Star Shoes</strong> &amp; <strong>Earth Shoes</strong> display Visa/MC/PayPal/Amex logos in footers and on product pages. Cited as one of the fastest trust-signal wins in e-commerce — free to implement, immediate effect.</div></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 9 — SUGGESTION 4: Trust Near ATC
-     ════════════════════════════════════════ -->
+<!-- ══ S9 — 90-Day Guarantee ══ -->
 <section class="slide" id="s9">
-  <div class="sug-header">
+  <div class="sug-hdr">
     <div class="sug-num">04</div>
-    <div class="sug-header-text">
-      <div class="slide-label">CRO Suggestion</div>
-      <h2 class="slide-title">Surface Your 90-Day Guarantee<br>Near "Add to Cart"</h2>
+    <div class="sug-hdr-text">
+      <div class="eyebrow">CRO Suggestion</div>
+      <h2>Surface Your 90-Day Guarantee<br>Near "Add to Cart"</h2>
       <div class="rule"></div>
       <span class="tag tag-quick">Quick Win — 2 Days</span>
     </div>
   </div>
-  <div class="quad-grid">
-    <div class="quad">
-      <h3 class="quad-head">📊 Case Study / Data</h3>
-      <div class="stat-highlight">+34%</div>
-      <p>Copyblogger research: displaying a guarantee or return policy directly adjacent to the purchase button increases conversions by up to <strong>+34%</strong>. The guarantee must be near the moment of hesitation — not on a separate page a click away.</p>
+  <div class="mockup-wrap">
+    <div class="mockup-col">
+      <div class="mockup-label before"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="3" x2="6" y2="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="8.5" r=".7" fill="currentColor"/></svg> CURRENT — No Guarantee Visible</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com/Colorado-Moccasin</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+          <div style="display:flex;flex:1">
+            <div style="width:90px;background:#f0e8d8;border-radius:2px;margin:6px 0 6px 6px"></div>
+            <div style="flex:1;padding:6px">
+              <div style="font-size:10px;font-weight:700;color:#3d2a14;margin-bottom:3px">Colorado Moccasin</div>
+              <div style="font-size:9px;color:#9B5C1A;margin-bottom:6px">$149.00</div>
+              <div class="pg-atc-btn">Add to Cart</div>
+              <div style="border:2px dashed #B83030;border-radius:3px;padding:4px 6px;margin-top:6px">
+                <div style="font-size:7px;color:#B83030">⚠ 90-day guarantee exists — but buyer sees NO safety net here. One click away = too far.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">📍 Current Scenario</h3>
-      <p>Sundance offers an outstanding <strong>90-day satisfaction guarantee</strong> with hassle-free exchanges and no return merchandise authorization required. This is a major competitive advantage — but it is buried on the Shipping &amp; Returns page. Product pages show no mention of it. Buyers considering a $150+ leather moccasin see no safety net at their decision moment.</p>
+    <div class="mockup-col">
+      <div class="mockup-label after"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> AFTER — Trust Icons Below ATC</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com/Colorado-Moccasin</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+          <div style="display:flex;flex:1">
+            <div style="width:90px;background:#f0e8d8;border-radius:2px;margin:6px 0 6px 6px"></div>
+            <div style="flex:1;padding:6px">
+              <div style="font-size:10px;font-weight:700;color:#3d2a14;margin-bottom:3px">Colorado Moccasin</div>
+              <div style="font-size:9px;color:#9B5C1A;margin-bottom:6px">$149.00</div>
+              <div class="pg-atc-btn">Add to Cart</div>
+              <div class="pg-trust-row" style="flex-wrap:wrap">
+                <div class="pg-trust-pill">🛡 90-Day Guarantee</div>
+                <div class="pg-trust-pill">🔄 Free Exchanges</div>
+                <div class="pg-trust-pill">🇺🇸 Made in USA</div>
+              </div>
+              <div class="pg-ship-line">🚚 Ships in 1–2 business days</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">✅ Recommendation</h3>
-      <ul>
-        <li>Add a 3-icon trust row beneath every "Add to Cart" button:</li>
-        <li><strong>🛡 90-Day Guarantee</strong> | <strong>🔄 Free Exchanges</strong> | <strong>🇺🇸 Made in USA</strong></li>
-        <li>Make "90-Day Guarantee" a hyperlink to the Returns page for buyers who want the full detail</li>
-        <li>Optional: add a short inline line — <em>"Not the right fit? We'll swap it. No hassle."</em></li>
-      </ul>
-    </div>
-    <div class="quad">
-      <h3 class="quad-head">🏪 Competitor Example</h3>
-      <p><strong>Danner Boots</strong> and <strong>Oboz Footwear</strong> both display guarantee icons directly below Add to Cart — "Free Returns," "Lifetime Repair Warranty," "Made in USA." This technique is especially powerful for specialty footwear where sizing uncertainty is the #1 hesitation.</p>
-    </div>
+  </div>
+  <div class="bottom-bar">
+    <div class="stat-chip"><div class="stat-num">+34%</div><div class="stat-body"><div class="stat-title">conversion increase</div><div class="stat-sub">Copyblogger: displaying a guarantee directly adjacent to the purchase button — not on a separate page a click away</div></div></div>
+    <div class="comp-chip"><div class="comp-label">Competitor Example</div><div class="comp-text"><strong>Danner Boots</strong> &amp; <strong>Oboz Footwear</strong> display guarantee icons directly below Add to Cart: "Free Returns," "Lifetime Repair," "Made in USA." Especially powerful for specialty footwear where sizing uncertainty is the #1 hesitation.</div></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 10 — SUGGESTION 5: Homepage Reviews
-     ════════════════════════════════════════ -->
+<!-- ══ S10 — Homepage Reviews ══ -->
 <section class="slide" id="s10">
-  <div class="sug-header">
+  <div class="sug-hdr">
     <div class="sug-num">05</div>
-    <div class="sug-header-text">
-      <div class="slide-label">CRO Suggestion</div>
-      <h2 class="slide-title">Surface Your 150+ Reviews<br>on the Homepage</h2>
+    <div class="sug-hdr-text">
+      <div class="eyebrow">CRO Suggestion</div>
+      <h2>Surface Your 150+ Reviews<br>on the Homepage</h2>
       <div class="rule"></div>
       <span class="tag tag-high">High Impact — 1 Week</span>
     </div>
   </div>
-  <div class="quad-grid">
-    <div class="quad">
-      <h3 class="quad-head">📊 Case Study / Data</h3>
-      <div class="stat-highlight">+72%</div>
-      <p>Unbounce and Broomberg research: adding customer testimonials and social proof to a landing/home page increases conversions by up to <strong>+72%</strong>. For first-time visitors, peer reviews are more persuasive than any brand claim you can make about yourself.</p>
+  <div class="mockup-wrap">
+    <div class="mockup-col">
+      <div class="mockup-label before"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="3" x2="6" y2="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="8.5" r=".7" fill="currentColor"/></svg> CURRENT — No Social Proof on Homepage</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+          <div class="pg-hero" style="min-height:60px"><div class="pg-hero-text">Handcrafted Leather Since 1972</div></div>
+          <div style="padding:6px 10px;border-bottom:1px solid #e0d4c0">
+            <div style="font-size:9px;font-weight:700;color:#3d2a14;margin-bottom:4px">Featured Products</div>
+            <div style="font-size:7px;color:#B83030;background:color-mix(in srgb,#B83030 8%,#fff);padding:4px 6px;border-radius:3px">⚠ 150 reviews (4.97★) exist on individual product pages — NONE shown to first-time homepage visitors</div>
+          </div>
+          <div class="pg-products">
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Colorado</div><div class="pg-prod-btn">Select Options</div></div>
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Trail Boot</div><div class="pg-prod-btn">Select Options</div></div>
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Sandal</div><div class="pg-prod-btn">Select Options</div></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">📍 Current Scenario</h3>
-      <p>Your site has <strong>150+ product reviews averaging 4.97 stars</strong> — a near-perfect score that is extraordinary for handmade goods. These reviews are only visible on individual product pages after a visitor navigates there. Your homepage — the first impression for most visitors — shows no reviews, no stars, and no social proof of any kind.</p>
+    <div class="mockup-col">
+      <div class="mockup-label after"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> AFTER — Reviews Section Added</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+          <div class="pg-hero" style="min-height:50px"><div class="pg-hero-text">Handcrafted Leather Since 1972</div></div>
+          <div class="pg-reviews">
+            <div class="pg-rating-badge">
+              <div class="pg-rating-num">4.97</div>
+              <div><div class="pg-stars">★★★★★</div><div class="pg-rating-sub">150+ verified customers</div></div>
+            </div>
+            <div class="pg-review-card"><div class="pg-stars">★★★★★</div><div class="pg-review-text">"Best moccasins I've ever owned. Incredibly comfortable from day one."</div><div class="pg-review-name">— Sarah M., Colorado Moccasin</div></div>
+            <div class="pg-review-card"><div class="pg-stars">★★★★★</div><div class="pg-review-text">"The quality is unmatched. I've had mine for 8 years."</div><div class="pg-review-name">— James T., Trail Boot</div></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">✅ Recommendation</h3>
-      <ul>
-        <li>Add a "What Customers Are Saying" section between hero and featured products</li>
-        <li>Display 3–4 rotating review quotes with <strong>★★★★★</strong> stars, reviewer name, and product</li>
-        <li>Include an aggregate badge: <em>"4.97★ from 150+ verified customers"</em></li>
-        <li>Source from your existing product reviews — no new content needed</li>
-      </ul>
-    </div>
-    <div class="quad">
-      <h3 class="quad-head">🏪 Competitor Example</h3>
-      <p><strong>Minnetonka</strong> prominently displays "4.8 stars, 12,000+ reviews" in their homepage header. <strong>Birkenstock</strong> uses a scrolling review carousel above the fold. Both brands treat their review count as a headline feature — Sundance's 4.97 average is actually <em>better</em> than most competitors and deserves the same prominent placement.</p>
-    </div>
+  </div>
+  <div class="bottom-bar">
+    <div class="stat-chip"><div class="stat-num">+72%</div><div class="stat-body"><div class="stat-title">conversion increase from social proof</div><div class="stat-sub">Unbounce/Broomberg: adding customer testimonials to a homepage. Sundance's 4.97★ avg is better than most competitors.</div></div></div>
+    <div class="comp-chip"><div class="comp-label">Competitor Example</div><div class="comp-text"><strong>Minnetonka</strong> displays "4.8★, 12,000+ reviews" in their homepage header. <strong>Birkenstock</strong> uses a scrolling review carousel above the fold. Both treat their review count as a headline feature.</div></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 11 — SUGGESTION 6: Mobile Sticky CTA
-     ════════════════════════════════════════ -->
+<!-- ══ S11 — Mobile Sticky CTA ══ -->
 <section class="slide" id="s11">
-  <div class="sug-header">
+  <div class="sug-hdr">
     <div class="sug-num">06</div>
-    <div class="sug-header-text">
-      <div class="slide-label">CRO Suggestion</div>
-      <h2 class="slide-title">Add a Mobile Sticky<br>"Add to Cart" Bar</h2>
+    <div class="sug-hdr-text">
+      <div class="eyebrow">CRO Suggestion</div>
+      <h2>Add a Mobile Sticky<br>"Add to Cart" Bar</h2>
       <div class="rule"></div>
       <span class="tag tag-high">High Impact — 1 Week</span>
     </div>
   </div>
-  <div class="quad-grid">
-    <div class="quad">
-      <h3 class="quad-head">📊 Case Study / Data</h3>
-      <div class="stat-highlight">+252.9%</div>
-      <p>Convertica case study: adding a sticky "Add to Cart" bar on mobile product pages increased order completions by <strong>+252.9%</strong>. Mobile shoppers frequently scroll past the main ATC button and lose access to it — a sticky bar eliminates this friction permanently.</p>
+  <div class="mockup-wrap">
+    <div class="mockup-col" style="align-items:center">
+      <div class="mockup-label before"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="3" x2="6" y2="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="8.5" r=".7" fill="currentColor"/></svg> CURRENT — ATC Scrolls Away</div>
+      <div class="mobile-browser">
+        <div class="mobile-bar">sundanceleather.com</div>
+        <div class="mobile-body">
+          <div style="background:#3d2a14;padding:4px 6px;font-size:8px;color:#d4a86a;font-family:Georgia,serif;text-align:center">SUNDANCE LEATHER</div>
+          <div style="padding:5px 6px;">
+            <div style="background:#e8d4b8;height:55px;border-radius:3px;margin-bottom:4px"></div>
+            <div style="font-size:8px;font-weight:700;color:#3d2a14">Colorado Moccasin</div>
+            <div style="font-size:8px;color:#9B5C1A;margin-bottom:4px">$149.00</div>
+            <div style="background:#9B5C1A;color:#fff;font-size:8px;padding:4px;border-radius:3px;text-align:center">Add to Cart</div>
+            <div style="font-size:7px;color:#5a4228;margin-top:6px;line-height:1.5">Handcrafted from premium full-grain leather. Available in 3 widths. Our moccasins conform to your foot for unmatched comfort…</div>
+            <div style="font-size:7px;color:#5a4228;margin-top:4px">Sizing information · Care guide · Reviews (150+)…</div>
+            <div style="font-size:7px;color:#B83030;margin-top:6px;background:color-mix(in srgb,#B83030 8%,#fff);padding:3px;border-radius:2px">⚠ Add to Cart scrolled out of view — buyer must scroll back up to purchase</div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">📍 Current Scenario</h3>
-      <p>On mobile, your "Add to Cart" button is positioned mid-page beneath the product images and description. As customers scroll to read sizing information, product details, or reviews, the purchase button disappears above the screen. To buy, they must scroll back up — a friction point that triggers a significant percentage of mobile exits.</p>
+    <div class="mockup-col" style="align-items:center">
+      <div class="mockup-label after"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> AFTER — Sticky Bar Always Visible</div>
+      <div class="mobile-browser">
+        <div class="mobile-bar">sundanceleather.com</div>
+        <div class="mobile-body">
+          <div style="background:#3d2a14;padding:4px 6px;font-size:8px;color:#d4a86a;font-family:Georgia,serif;text-align:center">SUNDANCE LEATHER</div>
+          <div style="padding:5px 6px;overflow:hidden">
+            <div style="background:#e8d4b8;height:55px;border-radius:3px;margin-bottom:4px"></div>
+            <div style="font-size:8px;font-weight:700;color:#3d2a14">Colorado Moccasin</div>
+            <div style="font-size:8px;color:#9B5C1A;margin-bottom:4px">$149.00</div>
+            <div style="font-size:7px;color:#5a4228;margin-top:6px;line-height:1.5">Handcrafted from premium full-grain leather. Available in 3 widths…</div>
+            <div style="font-size:7px;color:#5a4228;margin-top:4px">Sizing information · Care guide · Reviews (150+)…</div>
+          </div>
+          <div class="mobile-sticky">
+            <div><div class="mobile-sticky-name">Colorado Moccasin</div><div style="font-size:8px;color:#fff;font-weight:700">$149</div></div>
+            <div class="mobile-sticky-btn">Add to Cart</div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">✅ Recommendation</h3>
-      <ul>
-        <li>Add a <strong>fixed bottom bar on mobile</strong> that appears when the main ATC button scrolls out of view</li>
-        <li>Bar content: product name (truncated) + price + <strong>"Add to Cart"</strong> button</li>
-        <li>Disappears when user scrolls back to the main button (no visual duplication)</li>
-        <li>Shift4Shop supports custom HTML/CSS in templates — implementable without a plugin</li>
-      </ul>
-    </div>
-    <div class="quad">
-      <h3 class="quad-head">🏪 Competitor Example</h3>
-      <p><strong>Thursday Boot Co.</strong> and <strong>Tecovas</strong> both use mobile sticky purchase bars on all product pages. Thursday Boot attributes their mobile conversion rate (one of the highest in direct-to-consumer footwear) in part to eliminating scroll-related purchase friction on smartphones.</p>
-    </div>
+  </div>
+  <div class="bottom-bar">
+    <div class="stat-chip"><div class="stat-num">+253%</div><div class="stat-body"><div class="stat-title">mobile order completion increase</div><div class="stat-sub">Convertica case study: sticky "Add to Cart" bar on mobile product pages. Mobile shoppers scroll past main ATC and lose it.</div></div></div>
+    <div class="comp-chip"><div class="comp-label">Competitor Example</div><div class="comp-text"><strong>Thursday Boot Co.</strong> &amp; <strong>Tecovas</strong> use mobile sticky purchase bars on all product pages. Thursday Boot attributes their industry-leading mobile CVR in part to eliminating scroll-related friction.</div></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 12 — SUGGESTION 7: Best Sellers
-     ════════════════════════════════════════ -->
+<!-- ══ S12 — Best Sellers ══ -->
 <section class="slide" id="s12">
-  <div class="sug-header">
+  <div class="sug-hdr">
     <div class="sug-num">07</div>
-    <div class="sug-header-text">
-      <div class="slide-label">CRO Suggestion</div>
-      <h2 class="slide-title">Add "Best Sellers" Section<br>with Badges on Products</h2>
-      <div class="rule"></div>
-      <span class="tag tag-high">High Impact — 3–5 Days</span>
-    </div>
-  </div>
-  <div class="quad-grid">
-    <div class="quad">
-      <h3 class="quad-head">📊 Case Study / Data</h3>
-      <div class="stat-highlight">80%</div>
-      <p>ROIHunter data: the <strong>top 10% of SKUs</strong> drive <strong>80% of e-commerce revenue</strong>. Explicitly labeling best-sellers reduces decision paralysis, accelerates purchase decisions, and steers buyers toward products most likely to satisfy — reducing returns as a bonus.</p>
-    </div>
-    <div class="quad">
-      <h3 class="quad-head">📍 Current Scenario</h3>
-      <p>Your homepage shows a "Featured Products" section of 10 items with no differentiation — no badges, no "popular," no "top-rated" indicators. First-time visitors facing 12 product categories and dozens of SKUs have no guidance on where to start. Choice paralysis leads to inaction. Without a "bestseller" signal, customers treat all items as equally uncertain.</p>
-    </div>
-    <div class="quad">
-      <h3 class="quad-head">✅ Recommendation</h3>
-      <ul>
-        <li>Rename the homepage section from "Featured Products" to <strong>"Best Sellers"</strong></li>
-        <li>Add a <strong>"Best Seller"</strong> badge (small ribbon/overlay) to your top 5 products by revenue</li>
-        <li>Add a <strong>"Customer Favorite"</strong> badge to items with 50+ reviews</li>
-        <li>Consider adding a dedicated "Best Sellers" category page in the navigation</li>
-      </ul>
-    </div>
-    <div class="quad">
-      <h3 class="quad-head">🏪 Competitor Example</h3>
-      <p><strong>Manitobah Mukluks</strong> uses "Best Seller" ribbons and "#1 Most Loved" badges on their top products — guiding first-time visitors toward proven choices. <strong>Blundstone</strong> features a "Most Popular" section prominently on their homepage, reducing the decision complexity for new visitors unfamiliar with their range.</p>
-    </div>
-  </div>
-</section>
-
-<!-- ════════════════════════════════════════
-     SLIDE 13 — SUGGESTION 8: Email Popup
-     ════════════════════════════════════════ -->
-<section class="slide" id="s13">
-  <div class="sug-header">
-    <div class="sug-num">08</div>
-    <div class="sug-header-text">
-      <div class="slide-label">CRO Suggestion</div>
-      <h2 class="slide-title">Add a Timed Email Capture<br>Popup (60-Second Delay)</h2>
+    <div class="sug-hdr-text">
+      <div class="eyebrow">CRO Suggestion</div>
+      <h2>Add "Best Seller" Badges<br>&amp; Rename the Featured Section</h2>
       <div class="rule"></div>
       <span class="tag tag-high">High Impact — 3 Days</span>
     </div>
   </div>
-  <div class="quad-grid">
-    <div class="quad">
-      <h3 class="quad-head">📊 Case Study / Data</h3>
-      <div class="stat-highlight">+72%</div>
-      <p>Broomberg/Unbounce research: a well-timed email popup (delay 45–90 seconds) increases email list signups by <strong>+72%</strong>. The key is timing — immediate popups annoy visitors before they've seen your value; a 60-second delay catches engaged visitors at peak interest.</p>
+  <div class="mockup-wrap">
+    <div class="mockup-col">
+      <div class="mockup-label before"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="3" x2="6" y2="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="8.5" r=".7" fill="currentColor"/></svg> CURRENT — All Products Look Equal</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+          <div style="padding:6px 10px 3px;font-size:9px;font-weight:700;color:#3d2a14">Featured Products</div>
+          <div class="pg-products">
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Colorado Moccasin</div><div class="pg-prod-price">$149</div><div class="pg-prod-btn">Select Options</div></div>
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Trail Boot</div><div class="pg-prod-price">$189</div><div class="pg-prod-btn">Select Options</div></div>
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Sun Sandal</div><div class="pg-prod-price">$109</div><div class="pg-prod-btn">Select Options</div></div>
+          </div>
+          <div style="padding:0 10px 6px;font-size:7px;color:#B83030">⚠ No differentiation — first-time visitors face choice paralysis with 12 categories and no guidance on where to start.</div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">📍 Current Scenario</h3>
-      <p>Sundance Leather currently has <strong>no email capture popup</strong>. The only email collection point is a small newsletter signup at the very bottom of the footer — a location most visitors never reach. Visitors who browse, don't convert on this visit, and leave are lost forever with no way to re-engage them, even if they were genuinely interested.</p>
+    <div class="mockup-col">
+      <div class="mockup-label after"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> AFTER — Best Sellers + Badges</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+          <div style="padding:6px 10px 3px;font-size:9px;font-weight:700;color:#3d2a14">⭐ Best Sellers</div>
+          <div class="pg-products">
+            <div class="pg-product"><div class="pg-prod-badge">#1 Best Seller</div><div class="pg-prod-img"></div><div class="pg-prod-name">Colorado Moccasin</div><div class="pg-prod-price">$149</div><div class="pg-prod-btn good">Shop Now</div></div>
+            <div class="pg-product"><div class="pg-prod-badge" style="background:#5C9E74">Customer Fave ★150</div><div class="pg-prod-img"></div><div class="pg-prod-name">Trail Boot</div><div class="pg-prod-price">$189</div><div class="pg-prod-btn good">Shop Now</div></div>
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Sun Sandal</div><div class="pg-prod-price">$109</div><div class="pg-prod-btn good">Shop Now</div></div>
+          </div>
+          <div style="padding:0 10px 6px;font-size:7px;color:#3A7A52">✓ Buyers guided to proven choices — reduces decision paralysis and steers to high-confidence purchases.</div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">✅ Recommendation</h3>
-      <ul>
-        <li>Add a lightbox popup triggered <strong>60 seconds after page load</strong> (or at 50% scroll depth)</li>
-        <li>Offer an incentive: <em>"Get 10% off your first order + artisan stories from our workshop"</em></li>
-        <li>One field only: email address. Minimize friction.</li>
-        <li>Suppress for return visitors (cookie-based) and on checkout pages</li>
-      </ul>
-    </div>
-    <div class="quad">
-      <h3 class="quad-head">🏪 Competitor Example</h3>
-      <p><strong>Nashoba Valley Winery</strong> (craft/artisan brand) saw a <strong>+40% increase</strong> in email signups using a 45-second delayed popup offering "insider stories" — no discount. For an artisan brand like Sundance with a compelling heritage story, the offer doesn't need to be a discount; exclusive content or "moccasin care tips" can drive equal signup rates.</p>
-    </div>
+  </div>
+  <div class="bottom-bar">
+    <div class="stat-chip"><div class="stat-num">80%</div><div class="stat-body"><div class="stat-title">of revenue from top 10% of SKUs</div><div class="stat-sub">ROIHunter: labeling best-sellers reduces choice paralysis, accelerates purchase decisions, and reduces returns</div></div></div>
+    <div class="comp-chip"><div class="comp-label">Competitor Example</div><div class="comp-text"><strong>Manitobah Mukluks</strong> uses "Best Seller" ribbons and "#1 Most Loved" badges. <strong>Blundstone</strong> features a "Most Popular" section prominently on their homepage — cutting decision complexity for new visitors.</div></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 14 — SUGGESTION 9: CTA Copy
-     ════════════════════════════════════════ -->
+<!-- ══ S13 — Email Popup ══ -->
+<section class="slide" id="s13">
+  <div class="sug-hdr">
+    <div class="sug-num">08</div>
+    <div class="sug-hdr-text">
+      <div class="eyebrow">CRO Suggestion</div>
+      <h2>Add a Timed Email Capture<br>Popup (60-Second Delay)</h2>
+      <div class="rule"></div>
+      <span class="tag tag-high">High Impact — 3 Days</span>
+    </div>
+  </div>
+  <div class="mockup-wrap">
+    <div class="mockup-col">
+      <div class="mockup-label before"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="3" x2="6" y2="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="8.5" r=".7" fill="currentColor"/></svg> CURRENT — No Email Capture</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com</div></div>
+        <div class="browser-body" style="justify-content:space-between">
+          <div>
+            <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+            <div class="pg-hero" style="min-height:80px"><div class="pg-hero-text">Handcrafted Leather Since 1972</div></div>
+          </div>
+          <div>
+            <div class="pg-footer">
+              <div class="pg-footer-text" style="margin-bottom:3px">Newsletter</div>
+              <div style="background:#fff;border:1px solid #ddd;border-radius:3px;padding:3px 6px;font-size:7px;color:#aaa;margin-bottom:3px">Enter email…</div>
+              <div style="background:#9B5C1A;color:#fff;font-size:7px;padding:2px 8px;border-radius:2px;display:inline-block">Subscribe</div>
+              <div style="font-size:6px;color:#B83030;margin-top:4px">⚠ Only email capture is buried in footer — most visitors never reach it</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mockup-col">
+      <div class="mockup-label after"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> AFTER — 60s Timed Popup</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com</div></div>
+        <div class="browser-body" style="position:relative">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+          <div class="pg-hero" style="min-height:80px"><div class="pg-hero-text">Handcrafted Leather Since 1972</div></div>
+          <div class="pg-popup-overlay">
+            <div class="pg-popup">
+              <div style="font-size:14px;margin-bottom:3px">🥾</div>
+              <div class="pg-popup-head">Get 10% Off<br>Your First Order</div>
+              <div class="pg-popup-sub">Plus artisan stories &amp; care tips from our workshop in Colorado.</div>
+              <input class="pg-popup-input" placeholder="your@email.com" readonly>
+              <div class="pg-popup-btn">Claim My 10% Off</div>
+              <div style="font-size:6px;color:#aaa;margin-top:4px">No thanks, I'll pay full price</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-bar">
+    <div class="stat-chip"><div class="stat-num">+72%</div><div class="stat-body"><div class="stat-title">email signup increase</div><div class="stat-sub">Broomberg/Unbounce: timed popup at 45–90s. Timing key — immediate popups annoy; 60s catches engaged visitors at peak interest.</div></div></div>
+    <div class="comp-chip"><div class="comp-label">Competitor Example</div><div class="comp-text"><strong>Nashoba Valley Winery</strong> (artisan brand) saw +40% email signups with a 45-second popup offering "insider stories" — no discount needed. For a heritage brand, exclusive content alone drives strong signups.</div></div>
+  </div>
+</section>
+
+<!-- ══ S14 — CTA Copy ══ -->
 <section class="slide" id="s14">
-  <div class="sug-header">
+  <div class="sug-hdr">
     <div class="sug-num">09</div>
-    <div class="sug-header-text">
-      <div class="slide-label">CRO Suggestion</div>
-      <h2 class="slide-title">Rewrite Button Copy:<br>"Select Options" → "Shop Now"</h2>
+    <div class="sug-hdr-text">
+      <div class="eyebrow">CRO Suggestion</div>
+      <h2>Rewrite Button Copy:<br>"Select Options" → "Shop Now"</h2>
       <div class="rule"></div>
       <span class="tag tag-quick">Quick Win — 1 Day</span>
     </div>
   </div>
-  <div class="quad-grid">
-    <div class="quad">
-      <h3 class="quad-head">📊 Case Study / Data</h3>
-      <div class="stat-highlight">+111%</div>
-      <p>PartnerStack A/B test: changing a CTA from a system default label to a benefit-oriented, action-clear label increased click-through rate by <strong>+111%</strong>. Button copy is one of the highest-ROI changes in CRO — it costs nothing to change text.</p>
+  <div class="mockup-wrap">
+    <div class="mockup-col">
+      <div class="mockup-label before"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="3" x2="6" y2="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="8.5" r=".7" fill="currentColor"/></svg> CURRENT — System Default Labels</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com/Moccasins</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+          <div style="padding:5px 10px;font-size:9px;font-weight:700;color:#3d2a14">Moccasins</div>
+          <div class="pg-products">
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Colorado</div><div class="pg-prod-price">$149</div><div class="pg-prod-btn bad">Select Options</div></div>
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Mesa</div><div class="pg-prod-price">$139</div><div class="pg-prod-btn bad">Select Options</div></div>
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Prairie</div><div class="pg-prod-price">$129</div><div class="pg-prod-btn bad">Select Options</div></div>
+          </div>
+          <div style="padding:0 10px;font-size:7px;color:#B83030">⚠ "Select Options" is cold and mechanical — tells customers what to do to the system, not what they'll receive. Also: Contact form says "Submit Request", empty cart shows orphaned "Submit" button.</div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">📍 Current Scenario</h3>
-      <p>Your category pages display <strong>"Select Options"</strong> as the CTA on all product cards. Your contact form's submit button reads <strong>"Submit Request"</strong>. Your empty cart page shows a lone <strong>"Submit"</strong> button with no context. These are all system-default labels — cold, mechanical, and zero-benefit. They tell customers what to do to the system, not what they'll get.</p>
+    <div class="mockup-col">
+      <div class="mockup-label after"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> AFTER — Benefit-Oriented Copy</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com/Moccasins</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+          <div style="padding:5px 10px;font-size:9px;font-weight:700;color:#3d2a14">Moccasins</div>
+          <div class="pg-products">
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Colorado</div><div class="pg-prod-price">$149</div><div class="pg-prod-btn good">Shop Now →</div></div>
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Mesa</div><div class="pg-prod-price">$139</div><div class="pg-prod-btn good">Shop Now →</div></div>
+            <div class="pg-product"><div class="pg-prod-img"></div><div class="pg-prod-name">Prairie</div><div class="pg-prod-price">$129</div><div class="pg-prod-btn good">Shop Now →</div></div>
+          </div>
+          <div style="padding:0 10px;font-size:7px;color:#3A7A52">✓ Contact form → "Send My Question" · Empty cart → "Start Shopping →" · All text-only changes, no code needed.</div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">✅ Recommendation</h3>
-      <ul>
-        <li>Category cards: <strong>"Select Options"</strong> → <strong>"Shop Now"</strong> or <strong>"Choose Your Size"</strong></li>
-        <li>Contact form: <strong>"Submit Request"</strong> → <strong>"Send My Question"</strong></li>
-        <li>Empty cart: Remove the orphaned "Submit" button or replace with <strong>"Start Shopping →"</strong></li>
-        <li>These changes require only template text edits — no code changes needed</li>
-      </ul>
-    </div>
-    <div class="quad">
-      <h3 class="quad-head">🏪 Competitor Example</h3>
-      <p><strong>Cariuma</strong> (sustainable footwear) uses "Find My Size" and "Add to My Bag" instead of "Select Options" and "Add to Cart" — transforming functional labels into ownership language. Their conversion rate is consistently cited as above industry average, partly attributed to this personalization of purchase language throughout the site.</p>
-    </div>
+  </div>
+  <div class="bottom-bar">
+    <div class="stat-chip"><div class="stat-num">+111%</div><div class="stat-body"><div class="stat-title">CTR increase from better button copy</div><div class="stat-sub">PartnerStack A/B test: changing from system default to benefit-oriented, action-clear label. Costs nothing to change text.</div></div></div>
+    <div class="comp-chip"><div class="comp-label">Competitor Example</div><div class="comp-text"><strong>Cariuma</strong> uses "Find My Size" and "Add to My Bag" — transforming functional labels into ownership language. Their CVR is consistently cited as above industry average, partly attributed to personalized purchase language.</div></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 15 — SUGGESTION 10: Shipping Speed
-     ════════════════════════════════════════ -->
+<!-- ══ S15 — Shipping Speed ══ -->
 <section class="slide" id="s15">
-  <div class="sug-header">
+  <div class="sug-hdr">
     <div class="sug-num">10</div>
-    <div class="sug-header-text">
-      <div class="slide-label">CRO Suggestion</div>
-      <h2 class="slide-title">Show Shipping Speed<br>Near "Add to Cart"</h2>
+    <div class="sug-hdr-text">
+      <div class="eyebrow">CRO Suggestion</div>
+      <h2>Show Shipping Speed<br>Near "Add to Cart"</h2>
       <div class="rule"></div>
       <span class="tag tag-quick">Quick Win — 1 Day</span>
     </div>
   </div>
-  <div class="quad-grid">
-    <div class="quad">
-      <h3 class="quad-head">📊 Case Study / Data</h3>
-      <div class="stat-highlight">47%</div>
-      <p>Baymard Institute: <strong>47% of shoppers</strong> check shipping speed before completing a purchase. Displaying shipping timing near the Add to Cart button eliminates one of the most common pre-checkout hesitations — especially for gift purchases or time-sensitive needs.</p>
+  <div class="mockup-wrap">
+    <div class="mockup-col">
+      <div class="mockup-label before"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5"/><line x1="6" y1="3" x2="6" y2="6.5" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="8.5" r=".7" fill="currentColor"/></svg> CURRENT — No Shipping Info on PDP</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com/Colorado-Moccasin</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+          <div style="display:flex">
+            <div style="width:80px;background:#e8d4b8;border-radius:2px;margin:6px;flex-shrink:0"></div>
+            <div style="flex:1;padding:6px">
+              <div style="font-size:10px;font-weight:700;color:#3d2a14">Colorado Moccasin</div>
+              <div style="font-size:9px;color:#9B5C1A;margin-bottom:6px">$149.00</div>
+              <div class="pg-atc-btn">Add to Cart</div>
+              <div style="font-size:7px;color:#B83030;margin-top:5px;background:color-mix(in srgb,#B83030 8%,#fff);padding:4px;border-radius:3px">⚠ No shipping info here. Buyers assume handmade = weeks of wait. "When will it arrive?" goes unanswered — kills urgency.</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">📍 Current Scenario</h3>
-      <p>Shipping information is entirely absent from product pages. Customers must navigate to a separate "Shipping Info" page to discover when their order will arrive. For handmade goods — where buyers often expect long lead times — the lack of visible shipping speed creates unnecessary hesitation. Many buyers assume "handcrafted = weeks of wait" when in reality most orders ship in 1–2 business days.</p>
+    <div class="mockup-col">
+      <div class="mockup-label after"><svg viewBox="0 0 12 12" fill="none"><path d="M2 6.5l3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> AFTER — Shipping Speed Added</div>
+      <div class="browser" style="flex:1">
+        <div class="browser-bar"><div class="b-dots"><div class="b-dot r"></div><div class="b-dot y"></div><div class="b-dot g"></div></div><div class="b-url">sundanceleather.com/Colorado-Moccasin</div></div>
+        <div class="browser-body">
+          <div class="pg-header"><span class="pg-logo">SUNDANCE LEATHER</span></div>
+          <div style="display:flex">
+            <div style="width:80px;background:#e8d4b8;border-radius:2px;margin:6px;flex-shrink:0"></div>
+            <div style="flex:1;padding:6px">
+              <div style="font-size:10px;font-weight:700;color:#3d2a14">Colorado Moccasin</div>
+              <div style="font-size:9px;color:#9B5C1A;margin-bottom:6px">$149.00</div>
+              <div class="pg-atc-btn">Add to Cart</div>
+              <div class="pg-trust-row" style="flex-wrap:wrap">
+                <div class="pg-trust-pill">🛡 90-Day Guarantee</div>
+                <div class="pg-trust-pill">🇺🇸 Made in USA</div>
+              </div>
+              <div class="pg-ship-line" style="font-size:8px">🚚 Ships in 1–2 business days via USPS</div>
+              <div style="font-size:7px;color:#5a4228;margin-top:2px">Need it fast? UPS 2-Day available at checkout.</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="quad">
-      <h3 class="quad-head">✅ Recommendation</h3>
-      <ul>
-        <li>Add a single line beneath "Add to Cart": <strong>"🚚 Ships in 1–2 business days via USPS"</strong></li>
-        <li>For expedited option awareness: <em>"Need it fast? UPS 2-Day available at checkout"</em></li>
-        <li>During peak seasons, add: <em>"Order by Dec 18 for Christmas delivery"</em></li>
-        <li>This line belongs in the same trust-signal row as the guarantee icons (Suggestion #4)</li>
-      </ul>
-    </div>
-    <div class="quad">
-      <h3 class="quad-head">🏪 Competitor Example</h3>
-      <p><strong>L.L. Bean</strong> displays "Free Shipping on orders $50+" and estimated delivery dates directly on every product page. <strong>Duluth Trading Co.</strong> shows "Ships in 1–2 days" beneath their ATC button — a practice that has been A/B tested to increase purchase confidence for customers evaluating time-sensitive buying decisions.</p>
-    </div>
+  </div>
+  <div class="bottom-bar">
+    <div class="stat-chip"><div class="stat-num">47%</div><div class="stat-body"><div class="stat-title">of shoppers check shipping speed before completing purchase</div><div class="stat-sub">Baymard Institute: shipping timing near ATC eliminates one of the most common pre-checkout hesitations</div></div></div>
+    <div class="comp-chip"><div class="comp-label">Competitor Example</div><div class="comp-text"><strong>L.L. Bean</strong> displays estimated delivery dates on every product page. <strong>Duluth Trading Co.</strong> shows "Ships in 1–2 days" below their ATC — A/B tested to increase purchase confidence for time-sensitive buyers.</div></div>
   </div>
 </section>
 
-<!-- ════════════════════════════════════════
-     SLIDE 16 — IMPLEMENTATION PLAN
-     ════════════════════════════════════════ -->
+<!-- ══ S16 — IMPLEMENTATION PLAN ══ -->
 <section class="slide" id="s16">
-  <div class="slide-label">Next Steps</div>
-  <h2 class="slide-title">Implementation Plan</h2>
+  <div class="eyebrow">Next Steps</div>
+  <h2>Implementation Plan</h2>
   <div class="rule"></div>
-  <p>Prioritized by speed-to-impact ratio. Critical fixes first, then quick-win copy and trust signals, then structural improvements.</p>
-  <div style="overflow-x:auto; margin-top:20px">
-  <table class="impl-table">
-    <thead>
-      <tr>
-        <th>Priority</th>
-        <th>Action</th>
-        <th>Timeline</th>
-        <th>Effort</th>
-        <th>Expected Impact</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><span class="prio-badge prio-critical">Critical</span></td>
-        <td><strong>Fix legacy 3dcartstores.com sidebar links</strong></td>
-        <td>Day 1</td>
-        <td><span class="effort-dot"><span class="on"></span><span></span><span></span></span> Low</td>
-        <td>Eliminates sitewide link-break risk</td>
-      </tr>
-      <tr>
-        <td><span class="prio-badge prio-critical">Critical</span></td>
-        <td><strong>Remove noindex from About Us page</strong></td>
-        <td>Day 1</td>
-        <td><span class="effort-dot"><span class="on"></span><span></span><span></span></span> Low</td>
-        <td>Restores brand SEO, enables indexing</td>
-      </tr>
-      <tr>
-        <td><span class="prio-badge prio-high">High</span></td>
-        <td><strong>Add payment logos to footer &amp; product pages</strong></td>
-        <td>Day 1–2</td>
-        <td><span class="effort-dot"><span class="on"></span><span></span><span></span></span> Low</td>
-        <td>Reduces 6% payment-fear abandonment</td>
-      </tr>
-      <tr>
-        <td><span class="prio-badge prio-high">High</span></td>
-        <td><strong>Rewrite CTA copy: "Select Options" → "Shop Now"</strong></td>
-        <td>Day 1–2</td>
-        <td><span class="effort-dot"><span class="on"></span><span></span><span></span></span> Low</td>
-        <td>+111% CTR (PartnerStack A/B data)</td>
-      </tr>
-      <tr>
-        <td><span class="prio-badge prio-high">High</span></td>
-        <td><strong>Add 90-day guarantee icons below Add to Cart</strong></td>
-        <td>Day 2–3</td>
-        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span></span></span> Medium</td>
-        <td>+34% conversion (Copyblogger data)</td>
-      </tr>
-      <tr>
-        <td><span class="prio-badge prio-high">High</span></td>
-        <td><strong>Add shipping speed line near Add to Cart</strong></td>
-        <td>Day 2–3</td>
-        <td><span class="effort-dot"><span class="on"></span><span></span><span></span></span> Low</td>
-        <td>Reduces pre-checkout hesitation (47% stat)</td>
-      </tr>
-      <tr>
-        <td><span class="prio-badge prio-high">High</span></td>
-        <td><strong>Add hero carousel CTA buttons</strong></td>
-        <td>Day 3–4</td>
-        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span></span></span> Medium</td>
-        <td>Captures 80% above-fold intent</td>
-      </tr>
-      <tr>
-        <td><span class="prio-badge prio-high">High</span></td>
-        <td><strong>Make search bar visible in header</strong></td>
-        <td>Day 3–5</td>
-        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span></span></span> Medium</td>
-        <td>+9% CVR from search-user uplift</td>
-      </tr>
-      <tr>
-        <td><span class="prio-badge prio-medium">Medium</span></td>
-        <td><strong>Add customer reviews section to homepage</strong></td>
-        <td>Week 2</td>
-        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span></span></span> Medium</td>
-        <td>+72% social-proof conversion lift</td>
-      </tr>
-      <tr>
-        <td><span class="prio-badge prio-medium">Medium</span></td>
-        <td><strong>Add "Best Seller" badges + rename section</strong></td>
-        <td>Week 2</td>
-        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span></span></span> Medium</td>
-        <td>Reduces choice paralysis, steers buyers</td>
-      </tr>
-      <tr>
-        <td><span class="prio-badge prio-medium">Medium</span></td>
-        <td><strong>Add timed email capture popup (60s delay)</strong></td>
-        <td>Week 2</td>
-        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span></span></span> Medium</td>
-        <td>+72% email signups for retargeting</td>
-      </tr>
-      <tr>
-        <td><span class="prio-badge prio-medium">Medium</span></td>
-        <td><strong>Mobile sticky Add-to-Cart bar</strong></td>
-        <td>Week 3</td>
-        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span class="on"></span></span> High</td>
-        <td>+252.9% mobile order completions</td>
-      </tr>
-    </tbody>
-  </table>
+  <p>Prioritized by speed-to-impact. Critical fixes first — each takes under an hour and requires no developer.</p>
+  <div class="impl-wrap">
+    <table class="impl">
+      <thead><tr><th>Priority</th><th>Action</th><th>Timeline</th><th>Effort</th><th>Expected Impact</th></tr></thead>
+      <tbody>
+        <tr><td><span class="pb pb-c">Critical</span></td><td><strong>Fix legacy 3dcartstores.com sidebar links</strong></td><td>Day 1</td><td><span class="eff"><span class="on"></span><span></span><span></span></span></td><td>Eliminates sitewide link-break risk</td></tr>
+        <tr><td><span class="pb pb-c">Critical</span></td><td><strong>Remove noindex from About Us page</strong></td><td>Day 1</td><td><span class="eff"><span class="on"></span><span></span><span></span></span></td><td>Restores brand SEO, enables indexing</td></tr>
+        <tr><td><span class="pb pb-h">High</span></td><td><strong>Add payment logos — footer &amp; product pages</strong></td><td>Day 1–2</td><td><span class="eff"><span class="on"></span><span></span><span></span></span></td><td>Reduces 6% payment-fear abandonment</td></tr>
+        <tr><td><span class="pb pb-h">High</span></td><td><strong>Rewrite CTA copy: "Select Options" → "Shop Now"</strong></td><td>Day 1–2</td><td><span class="eff"><span class="on"></span><span></span><span></span></span></td><td>+111% CTR (PartnerStack A/B data)</td></tr>
+        <tr><td><span class="pb pb-h">High</span></td><td><strong>Add 90-day guarantee icons below Add to Cart</strong></td><td>Day 2–3</td><td><span class="eff"><span class="on"></span><span class="on"></span><span></span></span></td><td>+34% conversion (Copyblogger)</td></tr>
+        <tr><td><span class="pb pb-h">High</span></td><td><strong>Add shipping speed line near Add to Cart</strong></td><td>Day 2–3</td><td><span class="eff"><span class="on"></span><span></span><span></span></span></td><td>Removes pre-checkout hesitation</td></tr>
+        <tr><td><span class="pb pb-h">High</span></td><td><strong>Add CTA buttons to hero carousel</strong></td><td>Day 3–4</td><td><span class="eff"><span class="on"></span><span class="on"></span><span></span></span></td><td>Captures 80% above-fold intent</td></tr>
+        <tr><td><span class="pb pb-h">High</span></td><td><strong>Make search bar visible in header</strong></td><td>Day 3–5</td><td><span class="eff"><span class="on"></span><span class="on"></span><span></span></span></td><td>+9% CVR, +43% search usage</td></tr>
+        <tr><td><span class="pb pb-m">Medium</span></td><td><strong>Add customer reviews section to homepage</strong></td><td>Week 2</td><td><span class="eff"><span class="on"></span><span class="on"></span><span></span></span></td><td>+72% social-proof lift (Unbounce)</td></tr>
+        <tr><td><span class="pb pb-m">Medium</span></td><td><strong>Add "Best Seller" badges + rename section</strong></td><td>Week 2</td><td><span class="eff"><span class="on"></span><span class="on"></span><span></span></span></td><td>Reduces choice paralysis</td></tr>
+        <tr><td><span class="pb pb-m">Medium</span></td><td><strong>Add timed email capture popup (60s delay)</strong></td><td>Week 2</td><td><span class="eff"><span class="on"></span><span class="on"></span><span></span></span></td><td>+72% email signups for retargeting</td></tr>
+        <tr><td><span class="pb pb-m">Medium</span></td><td><strong>Mobile sticky Add-to-Cart bar</strong></td><td>Week 3</td><td><span class="eff"><span class="on"></span><span class="on"></span><span class="on"></span></span></td><td>+253% mobile order completions</td></tr>
+      </tbody>
+    </table>
   </div>
-  <p class="scroll-hint" style="margin-top:20px; font-size:12px; color:var(--text-2)">Total quick wins (Days 1–5): 6 changes, all copy or template edits — no developer required for most.</p>
+  <p style="margin-top:12px;font-size:11px;color:var(--text3)">First 8 changes (Days 1–5): all copy or template edits — no developer required.</p>
 </section>
 
 </div><!-- /deck -->
 
 <script>
-const slides = Array.from(document.querySelectorAll('.slide'));
-const total = slides.length;
-let current = 0;
+const slides=Array.from(document.querySelectorAll('.slide'));
+const total=slides.length;
+let cur=0;
+const prog=document.getElementById('progress');
+const ctr=document.getElementById('counter');
+const dotsEl=document.getElementById('dots');
 
-const progressEl = document.getElementById('progress');
-const counterEl = document.getElementById('counter');
-const dotsEl = document.getElementById('dots');
-
-// Build dots
-slides.forEach((_, i) => {
-  const d = document.createElement('button');
-  d.className = 'dot' + (i === 0 ? ' active' : '');
-  d.setAttribute('aria-label', 'Go to slide ' + (i + 1));
-  d.addEventListener('click', () => goTo(i));
+slides.forEach((_,i)=>{
+  const d=document.createElement('button');
+  d.className='dot'+(i===0?' active':'');
+  d.setAttribute('aria-label','Slide '+(i+1));
+  d.addEventListener('click',()=>go(i));
   dotsEl.appendChild(d);
 });
 
-function goTo(n) {
-  slides[current].classList.remove('active');
-  dotsEl.children[current].classList.remove('active');
-  current = Math.max(0, Math.min(total - 1, n));
-  slides[current].classList.add('active');
-  dotsEl.children[current].classList.add('active');
-  // Reset scroll
-  slides[current].scrollTop = 0;
-  // Update progress
-  const pct = ((current + 1) / total) * 100;
-  progressEl.style.width = pct + '%';
-  counterEl.textContent = (current + 1) + ' / ' + total;
+function go(n){
+  slides[cur].classList.remove('active');
+  dotsEl.children[cur].classList.remove('active');
+  cur=Math.max(0,Math.min(total-1,n));
+  slides[cur].classList.add('active');
+  dotsEl.children[cur].classList.add('active');
+  slides[cur].scrollTop=0;
+  prog.style.width=((cur+1)/total*100)+'%';
+  ctr.textContent=(cur+1)+' / '+total;
 }
-
-// Init
-goTo(0);
-
-document.getElementById('prev').addEventListener('click', () => goTo(current - 1));
-document.getElementById('next').addEventListener('click', () => goTo(current + 1));
-
-// Keyboard
-document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(current + 1);
-  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(current - 1);
+go(0);
+document.getElementById('prev').addEventListener('click',()=>go(cur-1));
+document.getElementById('next').addEventListener('click',()=>go(cur+1));
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='ArrowDown')go(cur+1);
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp')go(cur-1);
 });
-
-// Touch / swipe
-let touchStartX = 0;
-document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
-document.addEventListener('touchend', e => {
-  const dx = touchStartX - e.changedTouches[0].clientX;
-  if (Math.abs(dx) > 50) goTo(current + (dx > 0 ? 1 : -1));
-}, { passive: true });
+let tx=0;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
+document.addEventListener('touchend',e=>{const dx=tx-e.changedTouches[0].clientX;if(Math.abs(dx)>50)go(cur+(dx>0?1:-1))},{passive:true});
 </script>
 </body>
 </html>
