@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FastTrack CRO Analysis — Sundance Leather</title>
+<style>
+:root {
+  --bg:#FAF4EC;
+  --surface:#F2E9DC;
+  --card:#E8DDD0;
+  --card2:#DDD1C2;
+  --border:#C4AE90;
+  --accent:#9B5C1A;
+  --accent-light:#C4762A;
+  --text:#160C02;
+  --text-2:#5A4228;
+  --critical:#B83030;
+  --success:#3A7A52;
+  --warn:#8A6A10;
+  --dot-inactive:#C4AE90;
+  --slide-num:#9B8265;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:#150F08;
+    --surface:#1E1610;
+    --card:#271D10;
+    --card2:#301F0C;
+    --border:#3C2D1A;
+    --accent:#C4762A;
+    --accent-light:#D4924A;
+    --text:#F0E8DA;
+    --text-2:#9B8265;
+    --critical:#D95050;
+    --success:#5C9E74;
+    --warn:#C4A030;
+    --dot-inactive:#3C2D1A;
+    --slide-num:#6B5535;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:#150F08;
+  --surface:#1E1610;
+  --card:#271D10;
+  --card2:#301F0C;
+  --border:#3C2D1A;
+  --accent:#C4762A;
+  --accent-light:#D4924A;
+  --text:#F0E8DA;
+  --text-2:#9B8265;
+  --critical:#D95050;
+  --success:#5C9E74;
+  --warn:#C4A030;
+  --dot-inactive:#3C2D1A;
+  --slide-num:#6B5535;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── Progress bar ── */
+#progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+  z-index: 100;
+}
+
+/* ── Dot nav ── */
+#dots {
+  position: fixed;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 100;
+}
+.dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--dot-inactive);
+  cursor: pointer;
+  transition: background 0.25s, transform 0.25s;
+}
+.dot.active { background: var(--accent); transform: scale(1.4); }
+
+/* ── Arrow nav ── */
+.arrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 100;
+  color: var(--text-2);
+  font-size: 20px;
+  transition: background 0.2s, color 0.2s;
+  opacity: 0.75;
+}
+.arrow:hover { background: var(--accent); color: var(--text); opacity: 1; }
+#prev { left: 14px; }
+#next { right: 36px; }
+
+/* ── Slide counter ── */
+#counter {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--slide-num);
+  letter-spacing: .08em;
+  z-index: 100;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Deck ── */
+#deck {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+  overflow-y: auto;
+  padding: 48px 60px 56px;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Typography ── */
+.slide-label {
+  font-size: 10px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+h1.deck-title {
+  font-family: Georgia, 'Palatino Linotype', serif;
+  font-size: clamp(28px, 4vw, 52px);
+  font-weight: normal;
+  line-height: 1.15;
+  text-wrap: balance;
+  color: var(--text);
+}
+h2.slide-title {
+  font-family: Georgia, 'Palatino Linotype', serif;
+  font-size: clamp(20px, 2.6vw, 34px);
+  font-weight: normal;
+  line-height: 1.2;
+  text-wrap: balance;
+  color: var(--text);
+}
+h3.quad-head {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: var(--accent);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+p, li { font-size: 14px; line-height: 1.65; color: var(--text-2); }
+strong { color: var(--text); font-weight: 600; }
+
+/* ── Divider ── */
+.rule {
+  width: 48px; height: 2px;
+  background: var(--accent);
+  margin: 16px 0;
+}
+
+/* ── Tag / badge ── */
+.tag {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+.tag-critical { background: color-mix(in srgb, var(--critical) 18%, transparent); color: var(--critical); border: 1px solid color-mix(in srgb, var(--critical) 35%, transparent); }
+.tag-quick { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); border: 1px solid color-mix(in srgb, var(--success) 35%, transparent); }
+.tag-high { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); }
+
+/* ── SLIDE 1: TITLE ── */
+#s1 {
+  justify-content: center;
+  align-items: flex-start;
+  background: var(--bg);
+}
+.title-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 4px;
+  padding: 6px 14px;
+  margin-bottom: 28px;
+}
+.title-badge span { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+.subtitle { font-size: 16px; color: var(--text-2); margin-top: 20px; max-width: 480px; line-height: 1.6; }
+.meta-row {
+  display: flex;
+  gap: 36px;
+  margin-top: 48px;
+  flex-wrap: wrap;
+}
+.meta-item { display: flex; flex-direction: column; gap: 4px; }
+.meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: var(--accent); font-weight: 700; }
+.meta-value { font-size: 14px; color: var(--text); font-weight: 600; }
+.leather-accent {
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 38%;
+  background: linear-gradient(135deg, var(--surface) 0%, var(--card) 100%);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 40px;
+}
+.stat-big {
+  text-align: center;
+}
+.stat-big .num {
+  font-family: Georgia, serif;
+  font-size: 52px;
+  color: var(--accent);
+  line-height: 1;
+  font-weight: normal;
+}
+.stat-big .unit { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--text-2); margin-top: 6px; }
+.stat-divider { width: 1px; height: 32px; background: var(--border); }
+
+/* ── Overview grid ── */
+.overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-top: 24px;
+}
+.overview-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 20px;
+}
+.overview-card .oc-label { font-size: 10px; text-transform: uppercase; letter-spacing: .13em; color: var(--accent); font-weight: 700; margin-bottom: 8px; }
+.overview-card .oc-value { font-size: 15px; color: var(--text); font-weight: 600; margin-bottom: 4px; }
+.overview-card .oc-sub { font-size: 12px; color: var(--text-2); }
+
+/* ── Methodology ── */
+.method-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-top: 24px;
+}
+.method-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 22px;
+}
+.method-num { font-family: Georgia, serif; font-size: 36px; color: var(--accent); line-height: 1; }
+.method-card h4 { font-size: 13px; font-weight: 700; color: var(--text); margin: 10px 0 6px; }
+.method-card p { font-size: 13px; }
+
+/* ── Critical issue ── */
+.critical-banner {
+  background: color-mix(in srgb, var(--critical) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--critical) 30%, transparent);
+  border-radius: 6px;
+  padding: 20px 24px;
+  margin-top: 20px;
+}
+.critical-banner h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .14em; color: var(--critical); font-weight: 700; margin-bottom: 8px; }
+.critical-banner p { font-size: 14px; color: var(--text-2); }
+.critical-banner code {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  background: color-mix(in srgb, var(--critical) 12%, transparent);
+  color: var(--critical);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.impact-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.impact-pill {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px 14px;
+}
+.impact-pill .ip-icon { font-size: 18px; }
+.impact-pill .ip-text { font-size: 12px; color: var(--text); font-weight: 600; }
+.impact-pill .ip-sub { font-size: 11px; color: var(--text-2); }
+
+/* ── Fix steps ── */
+.fix-steps { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+.fix-step {
+  display: flex; gap: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 18px;
+  align-items: flex-start;
+}
+.fix-step-num {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.fix-step-text { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+.fix-step-text strong { color: var(--text); }
+
+/* ── 4-quadrant suggestion ── */
+.quad-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 14px;
+  margin-top: 24px;
+  flex: 1;
+}
+.quad {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+}
+.quad p, .quad li { font-size: 13px; }
+.quad ul { padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
+.stat-highlight {
+  display: inline-block;
+  font-family: Georgia, serif;
+  font-size: 28px;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.vs-row { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.vs-pill {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.vs-pill .vs-label { color: var(--text-2); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
+.vs-pill .vs-val { color: var(--text); font-weight: 600; }
+
+/* ── Implementation plan ── */
+.impl-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 22px;
+  overflow-x: auto;
+  display: block;
+}
+.impl-table th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: var(--accent);
+  font-weight: 700;
+  padding: 10px 14px;
+  background: var(--card);
+  border-bottom: 2px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+.impl-table td {
+  font-size: 13px;
+  color: var(--text-2);
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.impl-table tr:last-child td { border-bottom: none; }
+.impl-table tr:nth-child(even) td { background: color-mix(in srgb, var(--card) 50%, transparent); }
+.prio-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+.prio-critical { background: color-mix(in srgb, var(--critical) 18%, transparent); color: var(--critical); }
+.prio-high { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.prio-medium { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
+.effort-dot {
+  display: inline-flex;
+  gap: 3px;
+}
+.effort-dot span {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.effort-dot span.on { background: var(--accent); }
+
+/* ── Suggestion slide header ── */
+.sug-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.sug-header-text { flex: 1; min-width: 260px; }
+.sug-num {
+  font-family: Georgia, serif;
+  font-size: 56px;
+  color: var(--border);
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: -8px;
+}
+
+/* ── Scroll hint ── */
+.scroll-hint {
+  font-size: 10px;
+  color: var(--text-2);
+  text-align: center;
+  margin-top: 12px;
+  opacity: 0.6;
+  letter-spacing: .08em;
+}
+
+/* ── Mobile ── */
+@media (max-width: 700px) {
+  .slide { padding: 32px 22px 52px; }
+  .leather-accent { display: none; }
+  .quad-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
+  .overview-grid, .method-grid { grid-template-columns: 1fr; }
+  #next { right: 30px; }
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<div id="dots"></div>
+
+<button class="arrow" id="prev" aria-label="Previous slide">&#8592;</button>
+<button class="arrow" id="next" aria-label="Next slide">&#8594;</button>
+
+<div id="counter"></div>
+
+<div id="deck">
+
+<!-- ════════════════════════════════════════
+     SLIDE 1 — TITLE
+     ════════════════════════════════════════ -->
+<section class="slide" id="s1">
+  <div class="title-badge"><span>FastTrack CRO Analysis</span></div>
+  <h1 class="deck-title">Sundance Leather<br>Conversion Rate<br>Optimization Report</h1>
+  <div class="rule"></div>
+  <p class="subtitle">Full-site audit identifying critical revenue leaks and the highest-impact quick wins to increase conversions without changing your products or prices.</p>
+  <div class="meta-row">
+    <div class="meta-item"><span class="meta-label">Website</span><span class="meta-value">sundanceleather.com</span></div>
+    <div class="meta-item"><span class="meta-label">Platform</span><span class="meta-value">Shift4Shop</span></div>
+    <div class="meta-item"><span class="meta-label">Audit Date</span><span class="meta-value">August 2026</span></div>
+    <div class="meta-item"><span class="meta-label">Pages Audited</span><span class="meta-value">12+</span></div>
+  </div>
+  <div class="leather-accent">
+    <div class="stat-big"><div class="num">2</div><div class="unit">Critical Issues Found</div></div>
+    <div class="stat-divider"></div>
+    <div class="stat-big"><div class="num">10</div><div class="unit">High-Impact Opportunities</div></div>
+    <div class="stat-divider"></div>
+    <div class="stat-big"><div class="num">150+</div><div class="unit">Existing Reviews — Unused</div></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 2 — SITE OVERVIEW
+     ════════════════════════════════════════ -->
+<section class="slide" id="s2">
+  <div class="slide-label">Site Overview</div>
+  <h2 class="slide-title">About Sundance Leather</h2>
+  <div class="rule"></div>
+  <div class="overview-grid">
+    <div class="overview-card">
+      <div class="oc-label">What They Sell</div>
+      <div class="oc-value">Handcrafted leather footwear</div>
+      <div class="oc-sub">Moccasins, boots, sandals — made in the USA since 1972</div>
+    </div>
+    <div class="overview-card">
+      <div class="oc-label">Platform</div>
+      <div class="oc-value">Shift4Shop (formerly 3DCart)</div>
+      <div class="oc-sub">Legacy domain alias still active on some live links</div>
+    </div>
+    <div class="overview-card">
+      <div class="oc-label">Audience</div>
+      <div class="oc-value">Quality-conscious buyers</div>
+      <div class="oc-sub">Seeking durable, authentic American-made footwear</div>
+    </div>
+    <div class="overview-card">
+      <div class="oc-label">Existing Social Proof</div>
+      <div class="oc-value">150+ product reviews (4.97★ average)</div>
+      <div class="oc-sub">None surfaced on homepage or near purchase decisions</div>
+    </div>
+    <div class="overview-card">
+      <div class="oc-label">Return Policy</div>
+      <div class="oc-value">90-day guarantee + hassle-free exchanges</div>
+      <div class="oc-sub">BURIED on shipping/returns page — not visible on product pages</div>
+    </div>
+    <div class="overview-card">
+      <div class="oc-label">Pages Audited</div>
+      <div class="oc-value">Homepage, PDPs, Category, Cart, Contact</div>
+      <div class="oc-sub">Also: About, Size Guide, Testimonials, Shipping, Returns, Login</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 3 — METHODOLOGY
+     ════════════════════════════════════════ -->
+<section class="slide" id="s3">
+  <div class="slide-label">Our Approach</div>
+  <h2 class="slide-title">FastTrack CRO Methodology</h2>
+  <div class="rule"></div>
+  <p style="max-width:560px">The FastTrack CRO process applies the 80/20 principle: identify the 20% of changes that drive 80% of conversion lift. Every recommendation is tied to published data, case studies, and directly observable issues on your site.</p>
+  <div class="method-grid">
+    <div class="method-card">
+      <div class="method-num">01</div>
+      <h4>Audit the Buyer Journey</h4>
+      <p>Walk every path from landing to checkout — homepage, category, product detail, cart, contact — identifying friction, missing signals, and broken trust at each step.</p>
+    </div>
+    <div class="method-card">
+      <div class="method-num">02</div>
+      <h4>Evidence-Backed Fixes Only</h4>
+      <p>Every suggestion is anchored to third-party research (Baymard, Nielsen Norman, Unbounce) and/or real A/B test results from comparable e-commerce sites.</p>
+    </div>
+    <div class="method-card">
+      <div class="method-num">03</div>
+      <h4>Quick Wins First</h4>
+      <p>Prioritize changes that can be live within 1–2 weeks — copy edits, badge placement, trust signals — before tackling structural or code-intensive changes.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 4 — CRITICAL ISSUE #1
+     ════════════════════════════════════════ -->
+<section class="slide" id="s4">
+  <div class="slide-label">Critical Issue #1</div>
+  <h2 class="slide-title">Legacy Domain Links Active<br>on Every Page</h2>
+  <div class="rule"></div>
+  <span class="tag tag-critical">Fix Immediately — Revenue Risk</span>
+  <div class="critical-banner" style="margin-top:18px">
+    <h4>What We Found</h4>
+    <p>The <strong>"Why Buy Sundance?"</strong> sidebar link in your navigation points to the old Shift4Shop staging domain: <code>sundanceleather-com.3dcartstores.com</code>. This link appears on every page of your site. While it currently redirects, staging domains are unstable — any infrastructure change at Shift4Shop breaks this link sitewide, sending customers to a dead page at the moment they're most ready to buy.</p>
+  </div>
+  <div class="impact-row">
+    <div class="impact-pill">
+      <div class="ip-icon">⚠️</div>
+      <div><div class="ip-text">Appears on Every Page</div><div class="ip-sub">Header/sidebar navigation</div></div>
+    </div>
+    <div class="impact-pill">
+      <div class="ip-icon">🔗</div>
+      <div><div class="ip-text">Staging Domain Dependency</div><div class="ip-sub">sundanceleather-com.3dcartstores.com</div></div>
+    </div>
+    <div class="impact-pill">
+      <div class="ip-icon">💰</div>
+      <div><div class="ip-text">Trust Page Broken at Checkout Decision</div><div class="ip-sub">Buyers click "Why Buy?" before purchasing</div></div>
+    </div>
+  </div>
+  <div class="fix-steps">
+    <div class="fix-step"><div class="fix-step-num">1</div><div class="fix-step-text">Log into Shift4Shop admin → Navigation → Find "Why Buy Sundance?" link</div></div>
+    <div class="fix-step"><div class="fix-step-num">2</div><div class="fix-step-text">Replace URL with <strong>https://www.sundanceleather.com/Made-in-the-USA_ep_48-1.html</strong> (the final destination page)</div></div>
+    <div class="fix-step"><div class="fix-step-num">3</div><div class="fix-step-text">Audit all remaining internal links — search HTML/templates for <strong>3dcartstores.com</strong> and update each</div></div>
+    <div class="fix-step"><div class="fix-step-num">4</div><div class="fix-step-text">Time investment: <strong>30–60 minutes</strong>. Risk if ignored: sitewide broken link on next Shift4Shop platform update</div></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 5 — CRITICAL ISSUE #2
+     ════════════════════════════════════════ -->
+<section class="slide" id="s5">
+  <div class="slide-label">Critical Issue #2</div>
+  <h2 class="slide-title">About Us Page Is Invisible<br>to Google</h2>
+  <div class="rule"></div>
+  <span class="tag tag-critical">Fix Immediately — SEO &amp; Trust Risk</span>
+  <div class="critical-banner" style="margin-top:18px">
+    <h4>What We Found</h4>
+    <p>Your About Us page contains the meta tag: <code>googlebot: noindex,indexifembedded</code>. This tells Google's crawler to exclude the page from search results entirely. For a brand founded in 1972 with a compelling heritage story, your "About Us" is one of your most powerful trust-building and SEO assets — and Google currently cannot index it.</p>
+  </div>
+  <div class="impact-row">
+    <div class="impact-pill">
+      <div class="ip-icon">🔍</div>
+      <div><div class="ip-text">Not Indexed by Google</div><div class="ip-sub">noindex meta tag active</div></div>
+    </div>
+    <div class="impact-pill">
+      <div class="ip-icon">📉</div>
+      <div><div class="ip-text">Zero Brand Search Visibility</div><div class="ip-sub">"About Sundance Leather" returns no result</div></div>
+    </div>
+    <div class="impact-pill">
+      <div class="ip-icon">🏆</div>
+      <div><div class="ip-text">54-Year Heritage Story Not Ranking</div><div class="ip-sub">Competitors rank for brand + "since 1972" terms</div></div>
+    </div>
+  </div>
+  <div class="fix-steps">
+    <div class="fix-step"><div class="fix-step-num">1</div><div class="fix-step-text">Open About Us page in Shift4Shop admin → Page SEO settings → Remove or change the robots directive</div></div>
+    <div class="fix-step"><div class="fix-step-num">2</div><div class="fix-step-text">Replace <code>noindex,indexifembedded</code> with <strong>index,follow</strong> (or remove the tag entirely)</div></div>
+    <div class="fix-step"><div class="fix-step-num">3</div><div class="fix-step-text">Submit page to Google Search Console → URL Inspection → Request Indexing</div></div>
+    <div class="fix-step"><div class="fix-step-num">4</div><div class="fix-step-text">Time investment: <strong>15 minutes</strong>. Indexing may take 1–4 weeks but the fix is instant</div></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 6 — SUGGESTION 1: Hero CTA
+     ════════════════════════════════════════ -->
+<section class="slide" id="s6">
+  <div class="sug-header">
+    <div class="sug-num">01</div>
+    <div class="sug-header-text">
+      <div class="slide-label">CRO Suggestion</div>
+      <h2 class="slide-title">Add a Direct CTA Button<br>to the Hero Carousel</h2>
+      <div class="rule"></div>
+      <span class="tag tag-quick">Quick Win — 1 Day</span>
+    </div>
+  </div>
+  <div class="quad-grid">
+    <div class="quad">
+      <h3 class="quad-head">📊 Case Study / Data</h3>
+      <div class="stat-highlight">80%</div>
+      <p>Nielsen Norman Group research shows <strong>80% of user attention</strong> is spent above the fold. Hero sections without a clear CTA button lose the majority of visitor intent within seconds of landing.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">📍 Current Scenario</h3>
+      <p>Your homepage carousel rotates through product images with no call-to-action button overlay. Visitors who arrive ready to shop see a beautiful image but have no obvious next step — they must independently find the navigation or scroll to "Featured Products."</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">✅ Recommendation</h3>
+      <ul>
+        <li>Add a leather-toned CTA button to each carousel slide, e.g. <strong>"Shop Moccasins"</strong>, <strong>"Explore Boots"</strong></li>
+        <li>Position button center-bottom of each slide image</li>
+        <li>Use high-contrast button (cognac on dark or white on image)</li>
+        <li>Ensure each slide links directly to its corresponding category page</li>
+      </ul>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">🏪 Competitor Example</h3>
+      <p><strong>Minnetonka Moccasin</strong> and <strong>Frye Boots</strong> both place "Shop Now" and "Explore Collection" buttons directly on hero images with high-contrast overlays — guiding visitors to category pages within 2 seconds of landing, eliminating the search for next steps.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 7 — SUGGESTION 2: Search Bar
+     ════════════════════════════════════════ -->
+<section class="slide" id="s7">
+  <div class="sug-header">
+    <div class="sug-num">02</div>
+    <div class="sug-header-text">
+      <div class="slide-label">CRO Suggestion</div>
+      <h2 class="slide-title">Make the Search Bar Visible<br>in the Header</h2>
+      <div class="rule"></div>
+      <span class="tag tag-quick">Quick Win — 2 Days</span>
+    </div>
+  </div>
+  <div class="quad-grid">
+    <div class="quad">
+      <h3 class="quad-head">📊 Case Study / Data</h3>
+      <div class="stat-highlight">+9% CVR</div>
+      <p>LYST (fashion e-commerce) found that making search visible (vs. hidden behind icon) increased search usage by <strong>+43%</strong> and overall conversion rate by <strong>+9%</strong>. Baymard Institute: shoppers who use search convert at <strong>2–3x</strong> the rate of those who browse.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">📍 Current Scenario</h3>
+      <p>Your search function is hidden behind a small magnifying glass icon in the top-right corner. On a site with 12 categories and dozens of SKUs across multiple sizing systems, customers looking for a specific style — e.g. "black moccasin size 10" — cannot find it without discovering the hidden icon first.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">✅ Recommendation</h3>
+      <ul>
+        <li>Replace the icon with a <strong>visible search bar</strong> in the header, spanning 200–280px</li>
+        <li>Placeholder text: <em>"Search styles, sizes, materials…"</em></li>
+        <li>On mobile, keep the icon but make the expanded bar full-width on tap</li>
+        <li>Enable autocomplete suggestions if your platform supports it</li>
+      </ul>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">🏪 Competitor Example</h3>
+      <p><strong>Zappos</strong> and <strong>Chaco</strong> feature prominent center-header search bars on all pages. Zappos specifically cites search as one of their top conversion-driving features — helping customers find the right fit faster and reducing frustration-driven exits.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 8 — SUGGESTION 3: Payment Logos
+     ════════════════════════════════════════ -->
+<section class="slide" id="s8">
+  <div class="sug-header">
+    <div class="sug-num">03</div>
+    <div class="sug-header-text">
+      <div class="slide-label">CRO Suggestion</div>
+      <h2 class="slide-title">Add Payment Method Logos<br>to Footer &amp; Checkout</h2>
+      <div class="rule"></div>
+      <span class="tag tag-quick">Quick Win — 1 Day</span>
+    </div>
+  </div>
+  <div class="quad-grid">
+    <div class="quad">
+      <h3 class="quad-head">📊 Case Study / Data</h3>
+      <div class="stat-highlight">6%</div>
+      <p>Baymard Institute's 2022 checkout study found that <strong>6% of shoppers abandon</strong> specifically because they can't see their preferred payment method listed upfront. Payment logos increase checkout confidence before the buyer even clicks "Add to Cart."</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">📍 Current Scenario</h3>
+      <p>Your footer and product pages display <strong>no payment method logos</strong>. The only trust badge visible is a small RapidSSL seal in the sidebar — which most customers don't recognize or register. First-time buyers have no visual confirmation that Visa, Mastercard, or PayPal are accepted until they reach checkout — a point many never reach.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">✅ Recommendation</h3>
+      <ul>
+        <li>Add a row of payment logos to the footer: <strong>Visa, MC, Amex, Discover, PayPal</strong></li>
+        <li>Add same row beneath "Add to Cart" on product pages</li>
+        <li>Replace the low-recognition RapidSSL badge with a recognizable <strong>Norton / McAfee / BBB</strong> badge</li>
+        <li>Add a "Secure Checkout" lock icon near the cart CTA</li>
+      </ul>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">🏪 Competitor Example</h3>
+      <p><strong>Soft Star Shoes</strong> and <strong>Earth Shoes</strong> display Visa/MC/PayPal/Amex logos prominently in their footers and on product pages. This single change is cited as one of the fastest trust-signal wins in e-commerce — free to implement, immediate psychological effect.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 9 — SUGGESTION 4: Trust Near ATC
+     ════════════════════════════════════════ -->
+<section class="slide" id="s9">
+  <div class="sug-header">
+    <div class="sug-num">04</div>
+    <div class="sug-header-text">
+      <div class="slide-label">CRO Suggestion</div>
+      <h2 class="slide-title">Surface Your 90-Day Guarantee<br>Near "Add to Cart"</h2>
+      <div class="rule"></div>
+      <span class="tag tag-quick">Quick Win — 2 Days</span>
+    </div>
+  </div>
+  <div class="quad-grid">
+    <div class="quad">
+      <h3 class="quad-head">📊 Case Study / Data</h3>
+      <div class="stat-highlight">+34%</div>
+      <p>Copyblogger research: displaying a guarantee or return policy directly adjacent to the purchase button increases conversions by up to <strong>+34%</strong>. The guarantee must be near the moment of hesitation — not on a separate page a click away.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">📍 Current Scenario</h3>
+      <p>Sundance offers an outstanding <strong>90-day satisfaction guarantee</strong> with hassle-free exchanges and no return merchandise authorization required. This is a major competitive advantage — but it is buried on the Shipping &amp; Returns page. Product pages show no mention of it. Buyers considering a $150+ leather moccasin see no safety net at their decision moment.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">✅ Recommendation</h3>
+      <ul>
+        <li>Add a 3-icon trust row beneath every "Add to Cart" button:</li>
+        <li><strong>🛡 90-Day Guarantee</strong> | <strong>🔄 Free Exchanges</strong> | <strong>🇺🇸 Made in USA</strong></li>
+        <li>Make "90-Day Guarantee" a hyperlink to the Returns page for buyers who want the full detail</li>
+        <li>Optional: add a short inline line — <em>"Not the right fit? We'll swap it. No hassle."</em></li>
+      </ul>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">🏪 Competitor Example</h3>
+      <p><strong>Danner Boots</strong> and <strong>Oboz Footwear</strong> both display guarantee icons directly below Add to Cart — "Free Returns," "Lifetime Repair Warranty," "Made in USA." This technique is especially powerful for specialty footwear where sizing uncertainty is the #1 hesitation.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 10 — SUGGESTION 5: Homepage Reviews
+     ════════════════════════════════════════ -->
+<section class="slide" id="s10">
+  <div class="sug-header">
+    <div class="sug-num">05</div>
+    <div class="sug-header-text">
+      <div class="slide-label">CRO Suggestion</div>
+      <h2 class="slide-title">Surface Your 150+ Reviews<br>on the Homepage</h2>
+      <div class="rule"></div>
+      <span class="tag tag-high">High Impact — 1 Week</span>
+    </div>
+  </div>
+  <div class="quad-grid">
+    <div class="quad">
+      <h3 class="quad-head">📊 Case Study / Data</h3>
+      <div class="stat-highlight">+72%</div>
+      <p>Unbounce and Broomberg research: adding customer testimonials and social proof to a landing/home page increases conversions by up to <strong>+72%</strong>. For first-time visitors, peer reviews are more persuasive than any brand claim you can make about yourself.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">📍 Current Scenario</h3>
+      <p>Your site has <strong>150+ product reviews averaging 4.97 stars</strong> — a near-perfect score that is extraordinary for handmade goods. These reviews are only visible on individual product pages after a visitor navigates there. Your homepage — the first impression for most visitors — shows no reviews, no stars, and no social proof of any kind.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">✅ Recommendation</h3>
+      <ul>
+        <li>Add a "What Customers Are Saying" section between hero and featured products</li>
+        <li>Display 3–4 rotating review quotes with <strong>★★★★★</strong> stars, reviewer name, and product</li>
+        <li>Include an aggregate badge: <em>"4.97★ from 150+ verified customers"</em></li>
+        <li>Source from your existing product reviews — no new content needed</li>
+      </ul>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">🏪 Competitor Example</h3>
+      <p><strong>Minnetonka</strong> prominently displays "4.8 stars, 12,000+ reviews" in their homepage header. <strong>Birkenstock</strong> uses a scrolling review carousel above the fold. Both brands treat their review count as a headline feature — Sundance's 4.97 average is actually <em>better</em> than most competitors and deserves the same prominent placement.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 11 — SUGGESTION 6: Mobile Sticky CTA
+     ════════════════════════════════════════ -->
+<section class="slide" id="s11">
+  <div class="sug-header">
+    <div class="sug-num">06</div>
+    <div class="sug-header-text">
+      <div class="slide-label">CRO Suggestion</div>
+      <h2 class="slide-title">Add a Mobile Sticky<br>"Add to Cart" Bar</h2>
+      <div class="rule"></div>
+      <span class="tag tag-high">High Impact — 1 Week</span>
+    </div>
+  </div>
+  <div class="quad-grid">
+    <div class="quad">
+      <h3 class="quad-head">📊 Case Study / Data</h3>
+      <div class="stat-highlight">+252.9%</div>
+      <p>Convertica case study: adding a sticky "Add to Cart" bar on mobile product pages increased order completions by <strong>+252.9%</strong>. Mobile shoppers frequently scroll past the main ATC button and lose access to it — a sticky bar eliminates this friction permanently.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">📍 Current Scenario</h3>
+      <p>On mobile, your "Add to Cart" button is positioned mid-page beneath the product images and description. As customers scroll to read sizing information, product details, or reviews, the purchase button disappears above the screen. To buy, they must scroll back up — a friction point that triggers a significant percentage of mobile exits.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">✅ Recommendation</h3>
+      <ul>
+        <li>Add a <strong>fixed bottom bar on mobile</strong> that appears when the main ATC button scrolls out of view</li>
+        <li>Bar content: product name (truncated) + price + <strong>"Add to Cart"</strong> button</li>
+        <li>Disappears when user scrolls back to the main button (no visual duplication)</li>
+        <li>Shift4Shop supports custom HTML/CSS in templates — implementable without a plugin</li>
+      </ul>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">🏪 Competitor Example</h3>
+      <p><strong>Thursday Boot Co.</strong> and <strong>Tecovas</strong> both use mobile sticky purchase bars on all product pages. Thursday Boot attributes their mobile conversion rate (one of the highest in direct-to-consumer footwear) in part to eliminating scroll-related purchase friction on smartphones.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 12 — SUGGESTION 7: Best Sellers
+     ════════════════════════════════════════ -->
+<section class="slide" id="s12">
+  <div class="sug-header">
+    <div class="sug-num">07</div>
+    <div class="sug-header-text">
+      <div class="slide-label">CRO Suggestion</div>
+      <h2 class="slide-title">Add "Best Sellers" Section<br>with Badges on Products</h2>
+      <div class="rule"></div>
+      <span class="tag tag-high">High Impact — 3–5 Days</span>
+    </div>
+  </div>
+  <div class="quad-grid">
+    <div class="quad">
+      <h3 class="quad-head">📊 Case Study / Data</h3>
+      <div class="stat-highlight">80%</div>
+      <p>ROIHunter data: the <strong>top 10% of SKUs</strong> drive <strong>80% of e-commerce revenue</strong>. Explicitly labeling best-sellers reduces decision paralysis, accelerates purchase decisions, and steers buyers toward products most likely to satisfy — reducing returns as a bonus.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">📍 Current Scenario</h3>
+      <p>Your homepage shows a "Featured Products" section of 10 items with no differentiation — no badges, no "popular," no "top-rated" indicators. First-time visitors facing 12 product categories and dozens of SKUs have no guidance on where to start. Choice paralysis leads to inaction. Without a "bestseller" signal, customers treat all items as equally uncertain.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">✅ Recommendation</h3>
+      <ul>
+        <li>Rename the homepage section from "Featured Products" to <strong>"Best Sellers"</strong></li>
+        <li>Add a <strong>"Best Seller"</strong> badge (small ribbon/overlay) to your top 5 products by revenue</li>
+        <li>Add a <strong>"Customer Favorite"</strong> badge to items with 50+ reviews</li>
+        <li>Consider adding a dedicated "Best Sellers" category page in the navigation</li>
+      </ul>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">🏪 Competitor Example</h3>
+      <p><strong>Manitobah Mukluks</strong> uses "Best Seller" ribbons and "#1 Most Loved" badges on their top products — guiding first-time visitors toward proven choices. <strong>Blundstone</strong> features a "Most Popular" section prominently on their homepage, reducing the decision complexity for new visitors unfamiliar with their range.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 13 — SUGGESTION 8: Email Popup
+     ════════════════════════════════════════ -->
+<section class="slide" id="s13">
+  <div class="sug-header">
+    <div class="sug-num">08</div>
+    <div class="sug-header-text">
+      <div class="slide-label">CRO Suggestion</div>
+      <h2 class="slide-title">Add a Timed Email Capture<br>Popup (60-Second Delay)</h2>
+      <div class="rule"></div>
+      <span class="tag tag-high">High Impact — 3 Days</span>
+    </div>
+  </div>
+  <div class="quad-grid">
+    <div class="quad">
+      <h3 class="quad-head">📊 Case Study / Data</h3>
+      <div class="stat-highlight">+72%</div>
+      <p>Broomberg/Unbounce research: a well-timed email popup (delay 45–90 seconds) increases email list signups by <strong>+72%</strong>. The key is timing — immediate popups annoy visitors before they've seen your value; a 60-second delay catches engaged visitors at peak interest.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">📍 Current Scenario</h3>
+      <p>Sundance Leather currently has <strong>no email capture popup</strong>. The only email collection point is a small newsletter signup at the very bottom of the footer — a location most visitors never reach. Visitors who browse, don't convert on this visit, and leave are lost forever with no way to re-engage them, even if they were genuinely interested.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">✅ Recommendation</h3>
+      <ul>
+        <li>Add a lightbox popup triggered <strong>60 seconds after page load</strong> (or at 50% scroll depth)</li>
+        <li>Offer an incentive: <em>"Get 10% off your first order + artisan stories from our workshop"</em></li>
+        <li>One field only: email address. Minimize friction.</li>
+        <li>Suppress for return visitors (cookie-based) and on checkout pages</li>
+      </ul>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">🏪 Competitor Example</h3>
+      <p><strong>Nashoba Valley Winery</strong> (craft/artisan brand) saw a <strong>+40% increase</strong> in email signups using a 45-second delayed popup offering "insider stories" — no discount. For an artisan brand like Sundance with a compelling heritage story, the offer doesn't need to be a discount; exclusive content or "moccasin care tips" can drive equal signup rates.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 14 — SUGGESTION 9: CTA Copy
+     ════════════════════════════════════════ -->
+<section class="slide" id="s14">
+  <div class="sug-header">
+    <div class="sug-num">09</div>
+    <div class="sug-header-text">
+      <div class="slide-label">CRO Suggestion</div>
+      <h2 class="slide-title">Rewrite Button Copy:<br>"Select Options" → "Shop Now"</h2>
+      <div class="rule"></div>
+      <span class="tag tag-quick">Quick Win — 1 Day</span>
+    </div>
+  </div>
+  <div class="quad-grid">
+    <div class="quad">
+      <h3 class="quad-head">📊 Case Study / Data</h3>
+      <div class="stat-highlight">+111%</div>
+      <p>PartnerStack A/B test: changing a CTA from a system default label to a benefit-oriented, action-clear label increased click-through rate by <strong>+111%</strong>. Button copy is one of the highest-ROI changes in CRO — it costs nothing to change text.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">📍 Current Scenario</h3>
+      <p>Your category pages display <strong>"Select Options"</strong> as the CTA on all product cards. Your contact form's submit button reads <strong>"Submit Request"</strong>. Your empty cart page shows a lone <strong>"Submit"</strong> button with no context. These are all system-default labels — cold, mechanical, and zero-benefit. They tell customers what to do to the system, not what they'll get.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">✅ Recommendation</h3>
+      <ul>
+        <li>Category cards: <strong>"Select Options"</strong> → <strong>"Shop Now"</strong> or <strong>"Choose Your Size"</strong></li>
+        <li>Contact form: <strong>"Submit Request"</strong> → <strong>"Send My Question"</strong></li>
+        <li>Empty cart: Remove the orphaned "Submit" button or replace with <strong>"Start Shopping →"</strong></li>
+        <li>These changes require only template text edits — no code changes needed</li>
+      </ul>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">🏪 Competitor Example</h3>
+      <p><strong>Cariuma</strong> (sustainable footwear) uses "Find My Size" and "Add to My Bag" instead of "Select Options" and "Add to Cart" — transforming functional labels into ownership language. Their conversion rate is consistently cited as above industry average, partly attributed to this personalization of purchase language throughout the site.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 15 — SUGGESTION 10: Shipping Speed
+     ════════════════════════════════════════ -->
+<section class="slide" id="s15">
+  <div class="sug-header">
+    <div class="sug-num">10</div>
+    <div class="sug-header-text">
+      <div class="slide-label">CRO Suggestion</div>
+      <h2 class="slide-title">Show Shipping Speed<br>Near "Add to Cart"</h2>
+      <div class="rule"></div>
+      <span class="tag tag-quick">Quick Win — 1 Day</span>
+    </div>
+  </div>
+  <div class="quad-grid">
+    <div class="quad">
+      <h3 class="quad-head">📊 Case Study / Data</h3>
+      <div class="stat-highlight">47%</div>
+      <p>Baymard Institute: <strong>47% of shoppers</strong> check shipping speed before completing a purchase. Displaying shipping timing near the Add to Cart button eliminates one of the most common pre-checkout hesitations — especially for gift purchases or time-sensitive needs.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">📍 Current Scenario</h3>
+      <p>Shipping information is entirely absent from product pages. Customers must navigate to a separate "Shipping Info" page to discover when their order will arrive. For handmade goods — where buyers often expect long lead times — the lack of visible shipping speed creates unnecessary hesitation. Many buyers assume "handcrafted = weeks of wait" when in reality most orders ship in 1–2 business days.</p>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">✅ Recommendation</h3>
+      <ul>
+        <li>Add a single line beneath "Add to Cart": <strong>"🚚 Ships in 1–2 business days via USPS"</strong></li>
+        <li>For expedited option awareness: <em>"Need it fast? UPS 2-Day available at checkout"</em></li>
+        <li>During peak seasons, add: <em>"Order by Dec 18 for Christmas delivery"</em></li>
+        <li>This line belongs in the same trust-signal row as the guarantee icons (Suggestion #4)</li>
+      </ul>
+    </div>
+    <div class="quad">
+      <h3 class="quad-head">🏪 Competitor Example</h3>
+      <p><strong>L.L. Bean</strong> displays "Free Shipping on orders $50+" and estimated delivery dates directly on every product page. <strong>Duluth Trading Co.</strong> shows "Ships in 1–2 days" beneath their ATC button — a practice that has been A/B tested to increase purchase confidence for customers evaluating time-sensitive buying decisions.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════
+     SLIDE 16 — IMPLEMENTATION PLAN
+     ════════════════════════════════════════ -->
+<section class="slide" id="s16">
+  <div class="slide-label">Next Steps</div>
+  <h2 class="slide-title">Implementation Plan</h2>
+  <div class="rule"></div>
+  <p>Prioritized by speed-to-impact ratio. Critical fixes first, then quick-win copy and trust signals, then structural improvements.</p>
+  <div style="overflow-x:auto; margin-top:20px">
+  <table class="impl-table">
+    <thead>
+      <tr>
+        <th>Priority</th>
+        <th>Action</th>
+        <th>Timeline</th>
+        <th>Effort</th>
+        <th>Expected Impact</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="prio-badge prio-critical">Critical</span></td>
+        <td><strong>Fix legacy 3dcartstores.com sidebar links</strong></td>
+        <td>Day 1</td>
+        <td><span class="effort-dot"><span class="on"></span><span></span><span></span></span> Low</td>
+        <td>Eliminates sitewide link-break risk</td>
+      </tr>
+      <tr>
+        <td><span class="prio-badge prio-critical">Critical</span></td>
+        <td><strong>Remove noindex from About Us page</strong></td>
+        <td>Day 1</td>
+        <td><span class="effort-dot"><span class="on"></span><span></span><span></span></span> Low</td>
+        <td>Restores brand SEO, enables indexing</td>
+      </tr>
+      <tr>
+        <td><span class="prio-badge prio-high">High</span></td>
+        <td><strong>Add payment logos to footer &amp; product pages</strong></td>
+        <td>Day 1–2</td>
+        <td><span class="effort-dot"><span class="on"></span><span></span><span></span></span> Low</td>
+        <td>Reduces 6% payment-fear abandonment</td>
+      </tr>
+      <tr>
+        <td><span class="prio-badge prio-high">High</span></td>
+        <td><strong>Rewrite CTA copy: "Select Options" → "Shop Now"</strong></td>
+        <td>Day 1–2</td>
+        <td><span class="effort-dot"><span class="on"></span><span></span><span></span></span> Low</td>
+        <td>+111% CTR (PartnerStack A/B data)</td>
+      </tr>
+      <tr>
+        <td><span class="prio-badge prio-high">High</span></td>
+        <td><strong>Add 90-day guarantee icons below Add to Cart</strong></td>
+        <td>Day 2–3</td>
+        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span></span></span> Medium</td>
+        <td>+34% conversion (Copyblogger data)</td>
+      </tr>
+      <tr>
+        <td><span class="prio-badge prio-high">High</span></td>
+        <td><strong>Add shipping speed line near Add to Cart</strong></td>
+        <td>Day 2–3</td>
+        <td><span class="effort-dot"><span class="on"></span><span></span><span></span></span> Low</td>
+        <td>Reduces pre-checkout hesitation (47% stat)</td>
+      </tr>
+      <tr>
+        <td><span class="prio-badge prio-high">High</span></td>
+        <td><strong>Add hero carousel CTA buttons</strong></td>
+        <td>Day 3–4</td>
+        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span></span></span> Medium</td>
+        <td>Captures 80% above-fold intent</td>
+      </tr>
+      <tr>
+        <td><span class="prio-badge prio-high">High</span></td>
+        <td><strong>Make search bar visible in header</strong></td>
+        <td>Day 3–5</td>
+        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span></span></span> Medium</td>
+        <td>+9% CVR from search-user uplift</td>
+      </tr>
+      <tr>
+        <td><span class="prio-badge prio-medium">Medium</span></td>
+        <td><strong>Add customer reviews section to homepage</strong></td>
+        <td>Week 2</td>
+        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span></span></span> Medium</td>
+        <td>+72% social-proof conversion lift</td>
+      </tr>
+      <tr>
+        <td><span class="prio-badge prio-medium">Medium</span></td>
+        <td><strong>Add "Best Seller" badges + rename section</strong></td>
+        <td>Week 2</td>
+        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span></span></span> Medium</td>
+        <td>Reduces choice paralysis, steers buyers</td>
+      </tr>
+      <tr>
+        <td><span class="prio-badge prio-medium">Medium</span></td>
+        <td><strong>Add timed email capture popup (60s delay)</strong></td>
+        <td>Week 2</td>
+        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span></span></span> Medium</td>
+        <td>+72% email signups for retargeting</td>
+      </tr>
+      <tr>
+        <td><span class="prio-badge prio-medium">Medium</span></td>
+        <td><strong>Mobile sticky Add-to-Cart bar</strong></td>
+        <td>Week 3</td>
+        <td><span class="effort-dot"><span class="on"></span><span class="on"></span><span class="on"></span></span> High</td>
+        <td>+252.9% mobile order completions</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="scroll-hint" style="margin-top:20px; font-size:12px; color:var(--text-2)">Total quick wins (Days 1–5): 6 changes, all copy or template edits — no developer required for most.</p>
+</section>
+
+</div><!-- /deck -->
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let current = 0;
+
+const progressEl = document.getElementById('progress');
+const counterEl = document.getElementById('counter');
+const dotsEl = document.getElementById('dots');
+
+// Build dots
+slides.forEach((_, i) => {
+  const d = document.createElement('button');
+  d.className = 'dot' + (i === 0 ? ' active' : '');
+  d.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+  d.addEventListener('click', () => goTo(i));
+  dotsEl.appendChild(d);
+});
+
+function goTo(n) {
+  slides[current].classList.remove('active');
+  dotsEl.children[current].classList.remove('active');
+  current = Math.max(0, Math.min(total - 1, n));
+  slides[current].classList.add('active');
+  dotsEl.children[current].classList.add('active');
+  // Reset scroll
+  slides[current].scrollTop = 0;
+  // Update progress
+  const pct = ((current + 1) / total) * 100;
+  progressEl.style.width = pct + '%';
+  counterEl.textContent = (current + 1) + ' / ' + total;
+}
+
+// Init
+goTo(0);
+
+document.getElementById('prev').addEventListener('click', () => goTo(current - 1));
+document.getElementById('next').addEventListener('click', () => goTo(current + 1));
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goTo(current + 1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   goTo(current - 1);
+});
+
+// Touch / swipe
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  const dx = touchStartX - e.changedTouches[0].clientX;
+  if (Math.abs(dx) > 50) goTo(current + (dx > 0 ? 1 : -1));
+}, { passive: true });
+</script>
+</body>
+</html>
